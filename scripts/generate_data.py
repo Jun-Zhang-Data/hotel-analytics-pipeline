@@ -14,6 +14,12 @@ bookings = pd.DataFrame([
     ["B001", "H001", "G001", "2026-09-01", "2026-09-10", "2026-09-12", "CONFIRMED", "2026-09-01 10:00:00"],
     ["B002", "H001", "G002", "2026-09-01", "2026-09-11", "2026-09-14", "CANCELLED", "2026-09-01 11:00:00"],
     ["B003", "H002", "G003", "2026-09-01", "2026-09-08", "2026-09-09", "CONFIRMED", "2026-09-01 12:00:00"],
+    # Late-arriving update: same booking, newer source timestamp.
+    ["B001", "H001", "G001", "2026-09-01", "2026-09-10", "2026-09-12", "CANCELLED", "2026-09-01 15:00:00"],
+    # Invalid foreign key: H999 does not exist in hotels.
+    ["B004", "H999", "G004", "2026-09-02", "2026-09-10", "2026-09-12", "CONFIRMED", "2026-09-02 10:00:00"],
+    # Invalid business value: unsupported booking status.
+    ["B005", "H001", "G005", "2026-09-02", "2026-09-15", "2026-09-17", "PENDING_UNKNOWN", "2026-09-02 11:00:00"],
 ], columns=[
     "booking_id", "hotel_id", "guest_id", "booking_date",
     "check_in_date", "check_out_date", "status", "source_updated_at"
