@@ -5,7 +5,7 @@ with ranked as (
             partition by booking_id
             order by source_updated_at desc, ingested_at desc
         ) as rn
-    from {{ ref('stg_bookings') }}
+    from {{ ref('int_valid_bookings') }}
 )
 
 select
