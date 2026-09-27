@@ -1,0 +1,17 @@
+name: hotel_analytics
+version: "1.0.0"
+config-version: 2
+
+profile: hotel_analytics
+model-paths: ["models"]
+
+models:
+  hotel_analytics:
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: view
+    core:
+      +materialized: table
+    marts:
+      +materialized: table
