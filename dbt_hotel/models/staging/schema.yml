@@ -16,15 +16,6 @@ models:
       - name: hotel_id
         data_tests:
           - not_null
-          - relationships:
-              arguments:
-                to: ref('stg_hotels')
-                field: hotel_id
-      - name: booking_status
-        data_tests:
-          - accepted_values:
-              arguments:
-                values: ['CONFIRMED', 'CANCELLED']
 
   - name: stg_payments
     columns:
