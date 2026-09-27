@@ -1,0 +1,22 @@
+hotel_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('DB_HOST', 'warehouse') }}"
+      port: "{{ env_var('DB_PORT', '5432') | int }}"
+      user: "{{ env_var('DB_USER', 'analytics') }}"
+      password: "{{ env_var('DB_PASSWORD', 'analytics') }}"
+      dbname: "{{ env_var('DB_NAME', 'hotel') }}"
+      schema: analytics_dev
+      threads: 4
+
+    prod:
+      type: postgres
+      host: "{{ env_var('DB_HOST', 'warehouse') }}"
+      port: "{{ env_var('DB_PORT', '5432') | int }}"
+      user: "{{ env_var('DB_USER', 'analytics') }}"
+      password: "{{ env_var('DB_PASSWORD', 'analytics') }}"
+      dbname: "{{ env_var('DB_NAME', 'hotel') }}"
+      schema: analytics_prod
+      threads: 4
