@@ -1,0 +1,12 @@
+version: 2
+
+models:
+  - name: mart_hotel_daily
+    description: Daily hotel-level booking and revenue metrics.
+    columns:
+      - name: booking_date
+        data_tests:
+          - not_null
+      - name: hotel_id
+        data_tests:
+          - not_null
