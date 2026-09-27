@@ -1,0 +1,31 @@
+version: 2
+
+models:
+  - name: int_valid_bookings
+    description: Booking records that passed business-rule validation and are allowed downstream.
+    columns:
+      - name: booking_id
+        data_tests:
+          - not_null
+      - name: hotel_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_hotels')
+                field: hotel_id
+      - name: booking_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['CONFIRMED', 'CANCELLED']
+
+  - name: int_invalid_bookings
+    description: Quarantine model containing records that fail hotel-reference or booking-status validation.
+
+  - name: int_bookings_latest
+    description: Latest valid version of each booking based on source update timestamp.
+    columns:
+      - name: booking_id
+        data_tests:
+          - not_null
+          - unique
