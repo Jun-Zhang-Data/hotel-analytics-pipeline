@@ -2,7 +2,7 @@
 
 A **production-style local data engineering project** for hotel booking analytics, built with **PostgreSQL, dbt, Apache Airflow, Docker, and Python**.
 
-The project demonstrates how raw operational hotel data can be transformed into reliable analytics-ready datasets through a layered ELT pipeline, automated data quality checks, workflow orchestration, and Git-based development practices.
+The project demonstrates how raw operational hotel data can be transformed into reliable analytics-ready datasets through a layered ELT pipeline, automated data quality checks, workflow orchestration, CI validation, and Git-based development practices.
 
 ## What this repository does
 
@@ -54,6 +54,21 @@ After parity was confirmed, the refactored logic was promoted into the productio
 
 This demonstrates a repeatable approach to changing transformation logic safely without relying only on manual SQL comparison.
 
+## Continuous integration
+
+GitHub Actions automatically validates the project on pull requests and pushes to `master`.
+
+The CI workflow:
+
+- starts a PostgreSQL 16 service
+- initializes warehouse schemas and raw tables
+- generates sample hotel data
+- loads the raw source data with Python
+- runs `dbt debug`
+- runs `dbt build` to execute models and tests
+
+This provides automated integration-level validation of the dbt project before changes are accepted into the main branch.
+
 ## Pipeline orchestration
 
 Apache Airflow orchestrates the local data workflow, while Docker Compose provides a reproducible development environment containing:
@@ -68,7 +83,7 @@ The setup is designed to simulate common production data-platform patterns local
 
 ## Tech stack
 
-**Python · SQL · PostgreSQL · dbt · Apache Airflow · Docker · Docker Compose · Git/GitHub**
+**Python · SQL · PostgreSQL · dbt · Apache Airflow · Docker · Docker Compose · Git · GitHub · GitHub Actions**
 
 ## Engineering concepts demonstrated
 
@@ -79,6 +94,7 @@ The setup is designed to simulate common production data-platform patterns local
 - business-rule validation
 - workflow orchestration
 - containerized local infrastructure
+- CI validation with GitHub Actions
 - environment-based configuration
 - Git branching and pull-request workflows
 
@@ -86,7 +102,7 @@ The setup is designed to simulate common production data-platform patterns local
 
 This project currently runs as a local, containerized analytics platform.
 
-It follows several production-style engineering practices, but it does not yet include a fully deployed cloud production environment, CI/CD deployment pipeline, centralized monitoring, secrets management, or production-grade infrastructure orchestration.
+It includes automated CI validation with GitHub Actions and several production-style engineering practices, but it does not yet include a fully deployed cloud production environment, automated production deployment, centralized monitoring, secrets management, or production-grade infrastructure orchestration.
 
 ## Start
 
