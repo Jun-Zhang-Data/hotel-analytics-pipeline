@@ -19,3 +19,28 @@ models:
           - accepted_values:
               arguments:
                 values: ['OPEN', 'REVIEWED', 'RESOLVED', 'ACCEPTED_EXCEPTION']
+
+  - name: fct_data_quality_results
+    description: Aggregated data-quality results by check date, source system and validation rule for downstream monitoring.
+    columns:
+      - name: check_date
+        data_tests:
+          - not_null
+      - name: source_system_code
+        data_tests:
+          - not_null
+      - name: rule_id
+        data_tests:
+          - not_null
+      - name: records_checked
+        data_tests:
+          - not_null
+      - name: records_failed
+        data_tests:
+          - not_null
+      - name: pass_rate
+        data_tests:
+          - not_null
+      - name: mapping_coverage_rate
+        data_tests:
+          - not_null
