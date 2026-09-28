@@ -12,6 +12,31 @@ This catalogue records implemented data-quality controls. It only documents rule
 - Failure handling: the booking is excluded from trusted downstream booking output and materialized in dq_unmapped_hotel_bookings
 - Exception lifecycle default: OPEN
 - KPI outputs: records checked, records passed, records failed, pass rate, mapping coverage rate
-- Reporting outputs: fct_data_quality_results, mart_dq_daily, mart_dq_by_source, mart_exception_summary
 
-Additional completeness, validity, uniqueness and referential-integrity KPI rules will be added only when their operational result models are implemented.
+## DQ_COMP_GUEST_001 — Booking guest_id must be present
+
+- Quality dimension: COMPLETENESS
+- Scope: mapped booking records
+- Source field: guest_id
+- Rule: each mapped booking must contain guest_id before entering trusted downstream models
+- Pass condition: guest_id is not null
+- Failure handling: the booking is excluded from trusted downstream output and materialized in dq_missing_guest_id
+- Exception lifecycle default: OPEN
+- KPI outputs: records checked, records passed, records failed, pass rate
+
+## DQ_VALID_STAY_001 — Check-out date must not be before check-in date
+
+- Quality dimension: VALIDITY
+- Scope: mapped booking records
+- Source fields: check_in_date, check_out_date
+- Rule: check_out_date must be greater than or equal to check_in_date
+- Pass condition: check_out_date >= check_in_date
+- Failure handling: the booking is excluded from trusted downstream output and materialized in dq_invalid_stay_dates
+- Exception lifecycle default: OPEN
+- KPI outputs: records checked, records passed, records failed, pass rate
+
+## Reporting outputs
+
+Implemented rules feed fct_data_quality_results, mart_dq_daily, mart_dq_by_source and mart_exception_summary.
+
+Mapping coverage is calculated only from the mapping rule. Overall DQ pass rate aggregates all implemented rule checks.
