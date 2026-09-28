@@ -7,8 +7,7 @@ with bookings as (
         check_in_date,
         check_out_date,
         booking_status
-    from {{ ref('int_bookings_mapped') }}
-    where is_hotel_mapped = true
+    from {{ ref('int_bookings_validated') }}
 ),
 
 hotels as (
