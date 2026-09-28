@@ -1,0 +1,17 @@
+version: 2
+
+models:
+  - name: dim_source_system_reference
+    description: Controlled reference list of source systems allowed to participate in hotel data onboarding and mapping.
+    columns:
+      - name: source_system_code
+        description: Stable code identifying an upstream source system.
+        data_tests:
+          - not_null
+          - unique
+      - name: status
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['ACTIVE', 'INACTIVE']

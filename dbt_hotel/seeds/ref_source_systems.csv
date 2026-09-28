@@ -1,0 +1,4 @@
+source_system_code,source_system_name,system_type,status
+PMS_A,Property Management System A,PMS,ACTIVE
+PMS_B,Property Management System B,PMS,ACTIVE
+LEGACY_PMS,Legacy Property Management System,PMS,INACTIVE

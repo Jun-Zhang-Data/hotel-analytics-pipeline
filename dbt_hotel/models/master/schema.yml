@@ -1,0 +1,47 @@
+version: 2
+
+models:
+  - name: dim_hotel_master
+    description: Canonical hotel master containing one governed record per hotel entity.
+    columns:
+      - name: hotel_id
+        description: Canonical hotel identifier used by trusted downstream models.
+        data_tests:
+          - not_null
+          - unique
+      - name: country_code
+        data_tests:
+          - not_null
+      - name: status
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['ACTIVE', 'INACTIVE']
+
+  - name: map_hotel_source_to_canonical
+    description: Cross-reference from source-system hotel codes to canonical hotel master identifiers.
+    columns:
+      - name: source_system_code
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_source_system_reference')
+                field: source_system_code
+      - name: source_hotel_code
+        data_tests:
+          - not_null
+      - name: hotel_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_hotel_master')
+                field: hotel_id
+      - name: mapping_status
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['ACTIVE', 'INACTIVE']
