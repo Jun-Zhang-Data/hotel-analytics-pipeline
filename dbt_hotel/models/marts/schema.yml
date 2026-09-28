@@ -10,3 +10,42 @@ models:
       - name: hotel_id
         data_tests:
           - not_null
+
+  - name: mart_dq_daily
+    description: Daily data-quality KPI summary for reporting.
+    columns:
+      - name: check_date
+        data_tests:
+          - not_null
+      - name: records_checked
+        data_tests:
+          - not_null
+      - name: dq_pass_rate
+        data_tests:
+          - not_null
+
+  - name: mart_dq_by_source
+    description: Data-quality KPI summary by source system.
+    columns:
+      - name: check_date
+        data_tests:
+          - not_null
+      - name: source_system_code
+        data_tests:
+          - not_null
+      - name: mapping_coverage_rate
+        data_tests:
+          - not_null
+
+  - name: mart_exception_summary
+    description: Exception counts by date, source, rule, quality dimension and lifecycle status.
+    columns:
+      - name: detected_date
+        data_tests:
+          - not_null
+      - name: rule_id
+        data_tests:
+          - not_null
+      - name: exception_count
+        data_tests:
+          - not_null
