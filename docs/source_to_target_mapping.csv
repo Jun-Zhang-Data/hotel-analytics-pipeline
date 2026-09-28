@@ -1,0 +1,19 @@
+source_system,source_table,source_field,transformation_rule,target_model,target_field,validation_rule
+PMS_A/PMS_B,raw.bookings,booking_id,Trim and retain source booking identifier,stg_bookings,booking_id,Not null
+PMS_A/PMS_B,raw.bookings,source_system_code,Uppercase and trim source system code,stg_bookings,source_system_code,Not null
+PMS_A/PMS_B,raw.bookings,source_hotel_code,Uppercase and trim source-local hotel code,stg_bookings,source_hotel_code,Not null
+PMS_A/PMS_B,raw.bookings,guest_id,Trim guest identifier and retain null when missing,stg_bookings,guest_id,Completeness rule DQ_COMP_GUEST_001
+PMS_A/PMS_B,raw.bookings,booking_date,Cast source text to date,stg_bookings,booking_date,Date cast must succeed
+PMS_A/PMS_B,raw.bookings,check_in_date,Cast source text to date,stg_bookings,check_in_date,Date cast must succeed
+PMS_A/PMS_B,raw.bookings,check_out_date,Cast source text to date,stg_bookings,check_out_date,Validity rule DQ_VALID_STAY_001
+PMS_A/PMS_B,raw.bookings,status,Uppercase and trim booking status,stg_bookings,booking_status,Accepted values CONFIRMED/CANCELLED
+PMS_A/PMS_B,stg_bookings,source_system_code + source_hotel_code,Join to ACTIVE source-to-canonical hotel mapping,int_bookings_mapped,hotel_id,Mapping rule DQ_MAP_HOTEL_001
+PMS_A/PMS_B,int_bookings_mapped,is_hotel_mapped,Keep only records with active canonical hotel mapping,int_bookings_validated,hotel_id,Unmapped records routed to dq_unmapped_hotel_bookings
+PMS_A/PMS_B,int_bookings_mapped,guest_id,Require non-null guest_id for trusted output,int_bookings_validated,guest_id,Failures routed to dq_missing_guest_id
+PMS_A/PMS_B,int_bookings_mapped,check_in_date + check_out_date,Require check_out_date >= check_in_date,int_bookings_validated,check_out_date,Failures routed to dq_invalid_stay_dates
+PMS_A/PMS_B,int_bookings_validated,validated booking fields,Enrich with canonical hotel master and payment totals,int_bookings_enriched,booking attributes,Only validated records are enriched
+PMS_A/PMS_B,int_bookings_enriched,booking fields,Project trusted booking grain,fct_bookings,booking fields,booking_id unique and not null; hotel_id referential integrity
+PMS_A/PMS_B,int_bookings_mapped,is_hotel_mapped,Aggregate mapping pass/fail counts by date source and rule,fct_data_quality_results,records_checked/records_passed/records_failed/pass_rate,Mapping coverage KPI
+PMS_A/PMS_B,int_bookings_mapped,guest_id,Aggregate completeness pass/fail counts by date source and rule,fct_data_quality_results,records_checked/records_passed/records_failed/pass_rate,Completeness KPI
+PMS_A/PMS_B,int_bookings_mapped,check_in_date + check_out_date,Aggregate validity pass/fail counts by date source and rule,fct_data_quality_results,records_checked/records_passed/records_failed/pass_rate,Validity KPI
+PMS_A/PMS_B,dq_unmapped_hotel_bookings/dq_missing_guest_id/dq_invalid_stay_dates,exception records,Union implemented exception types,mart_exception_summary,exception_count,Exception counts grouped by date source rule dimension and status
