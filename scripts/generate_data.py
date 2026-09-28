@@ -11,18 +11,20 @@ hotels = pd.DataFrame([
 ], columns=["hotel_id", "hotel_name", "city", "source_updated_at"])
 
 bookings = pd.DataFrame([
-    ["B001", "H001", "G001", "2026-09-01", "2026-09-10", "2026-09-12", "CONFIRMED", "2026-09-01 10:00:00"],
-    ["B002", "H001", "G002", "2026-09-01", "2026-09-11", "2026-09-14", "CANCELLED", "2026-09-01 11:00:00"],
-    ["B003", "H002", "G003", "2026-09-01", "2026-09-08", "2026-09-09", "CONFIRMED", "2026-09-01 12:00:00"],
+    ["B001", "PMS_A", "STO01", "G001", "2026-09-01", "2026-09-10", "2026-09-12", "CONFIRMED", "2026-09-01 10:00:00"],
+    ["B002", "PMS_B", "SE-STH", "G002", "2026-09-01", "2026-09-11", "2026-09-14", "CANCELLED", "2026-09-01 11:00:00"],
+    ["B003", "PMS_A", "GOT01", "G003", "2026-09-01", "2026-09-08", "2026-09-09", "CONFIRMED", "2026-09-01 12:00:00"],
+    ["B004", "PMS_A", "UNKNOWN99", "G004", "2026-09-02", "2026-09-15", "2026-09-17", "CONFIRMED", "2026-09-02 09:00:00"],
 ], columns=[
-    "booking_id", "hotel_id", "guest_id", "booking_date",
-    "check_in_date", "check_out_date", "status", "source_updated_at"
+    "booking_id", "source_system_code", "source_hotel_code", "guest_id",
+    "booking_date", "check_in_date", "check_out_date", "status", "source_updated_at"
 ])
 
 payments = pd.DataFrame([
     ["P001", "B001", 2400, "SEK", "2026-09-01 10:10:00"],
     ["P002", "B002", 0, "SEK", "2026-09-01 11:10:00"],
     ["P003", "B003", 1500, "SEK", "2026-09-01 12:10:00"],
+    ["P004", "B004", 1800, "SEK", "2026-09-02 09:10:00"],
 ], columns=["payment_id", "booking_id", "amount", "currency", "source_updated_at"])
 
 hotels.to_csv(DATA_DIR / "hotels.csv", index=False)
