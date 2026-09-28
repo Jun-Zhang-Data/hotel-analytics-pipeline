@@ -9,6 +9,10 @@ models:
   hotel_analytics:
     staging:
       +materialized: view
+    reference:
+      +materialized: table
+    master:
+      +materialized: table
     intermediate:
       +materialized: view
     core:
