@@ -90,7 +90,8 @@ def load_dataset(table_name, cfg):
     df["source_file"] = cfg["file"].name
 
     columns = cfg["columns"]
-    rows = list(df[columns].itertuples(index=False, name=None))
+    load_df = df[columns].astype(object).where(pd.notna(df[columns]), None)
+    rows = list(load_df.itertuples(index=False, name=None))
     column_sql = ", ".join(columns)
 
     query = f"""
