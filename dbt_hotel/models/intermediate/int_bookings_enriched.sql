@@ -7,7 +7,8 @@ with bookings as (
         check_in_date,
         check_out_date,
         booking_status
-    from {{ ref('int_bookings_latest') }}
+    from {{ ref('int_bookings_mapped') }}
+    where is_hotel_mapped = true
 ),
 
 hotels as (
@@ -15,7 +16,7 @@ hotels as (
         hotel_id,
         hotel_name,
         city
-    from {{ ref('stg_hotels') }}
+    from {{ ref('dim_hotel_master') }}
 ),
 
 payments as (

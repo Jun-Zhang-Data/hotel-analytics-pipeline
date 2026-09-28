@@ -1,0 +1,21 @@
+version: 2
+
+models:
+  - name: dq_unmapped_hotel_bookings
+    description: Structured exceptions for bookings whose source hotel code has no active canonical mapping.
+    columns:
+      - name: exception_id
+        data_tests:
+          - not_null
+          - unique
+      - name: record_key
+        data_tests:
+          - not_null
+      - name: rule_id
+        data_tests:
+          - not_null
+      - name: exception_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['OPEN', 'REVIEWED', 'RESOLVED', 'ACCEPTED_EXCEPTION']

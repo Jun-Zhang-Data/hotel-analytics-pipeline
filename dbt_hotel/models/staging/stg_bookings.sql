@@ -1,6 +1,7 @@
 select
     booking_id,
-    hotel_id,
+    upper(trim(source_system_code)) as source_system_code,
+    trim(source_hotel_code) as source_hotel_code,
     guest_id,
     cast(booking_date as date) as booking_date,
     cast(check_in_date as date) as check_in_date,

@@ -34,7 +34,8 @@ CONFIG = {
         "columns": [
             "ingestion_id",
             "booking_id",
-            "hotel_id",
+            "source_system_code",
+            "source_hotel_code",
             "guest_id",
             "booking_date",
             "check_in_date",
