@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS raw.hotels (
 CREATE TABLE IF NOT EXISTS raw.bookings (
     ingestion_id TEXT PRIMARY KEY,
     booking_id TEXT NOT NULL,
-    hotel_id TEXT,
+    source_system_code TEXT,
+    source_hotel_code TEXT,
     guest_id TEXT,
     booking_date TEXT,
     check_in_date TEXT,
