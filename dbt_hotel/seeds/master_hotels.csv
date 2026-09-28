@@ -1,0 +1,4 @@
+hotel_id,hotel_name,city,country_code,status,effective_from,effective_to
+H001,Stockholm Central,Stockholm,SE,ACTIVE,2026-01-01,
+H002,Gothenburg Riverside,Gothenburg,SE,ACTIVE,2026-01-01,
+H003,Malmo City,Malmo,SE,ACTIVE,2026-01-01,
