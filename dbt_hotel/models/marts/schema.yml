@@ -49,3 +49,49 @@ models:
       - name: exception_count
         data_tests:
           - not_null
+
+  - name: mart_power_bi_hotel_daily
+    description: Power BI-ready daily hotel operational metrics enriched with hotel attributes and pre-calculated rates.
+    columns:
+      - name: booking_date
+        data_tests:
+          - not_null
+      - name: hotel_id
+        data_tests:
+          - not_null
+      - name: hotel_name
+        data_tests:
+          - not_null
+      - name: total_bookings
+        data_tests:
+          - not_null
+      - name: cancellation_rate
+        data_tests:
+          - not_null
+      - name: revenue_per_booking
+        data_tests:
+          - not_null
+
+  - name: mart_power_bi_dq_rule_daily
+    description: Power BI-ready daily data-quality results at source-system and rule grain.
+    columns:
+      - name: check_date
+        data_tests:
+          - not_null
+      - name: source_system_code
+        data_tests:
+          - not_null
+      - name: rule_id
+        data_tests:
+          - not_null
+      - name: quality_dimension
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['MAPPING_COVERAGE', 'COMPLETENESS', 'VALIDITY']
+      - name: records_checked
+        data_tests:
+          - not_null
+      - name: pass_rate
+        data_tests:
+          - not_null
