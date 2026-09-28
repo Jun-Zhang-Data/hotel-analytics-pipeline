@@ -5,42 +5,52 @@ models:
     description: Structured exceptions for bookings whose source hotel code has no active canonical mapping.
     columns:
       - name: exception_id
-        data_tests:
-          - not_null
-          - unique
+        data_tests: [not_null, unique]
       - name: record_key
-        data_tests:
-          - not_null
+        data_tests: [not_null]
       - name: rule_id
-        data_tests:
-          - not_null
-      - name: exception_status
-        data_tests:
-          - accepted_values:
-              arguments:
-                values: ['OPEN', 'REVIEWED', 'RESOLVED', 'ACCEPTED_EXCEPTION']
+        data_tests: [not_null]
+
+  - name: dq_missing_guest_id
+    description: Structured completeness exceptions for mapped bookings missing guest_id.
+    columns:
+      - name: exception_id
+        data_tests: [not_null, unique]
+      - name: record_key
+        data_tests: [not_null]
+      - name: rule_id
+        data_tests: [not_null]
+
+  - name: dq_invalid_stay_dates
+    description: Structured validity exceptions for mapped bookings with check-out before check-in.
+    columns:
+      - name: exception_id
+        data_tests: [not_null, unique]
+      - name: record_key
+        data_tests: [not_null]
+      - name: rule_id
+        data_tests: [not_null]
 
   - name: fct_data_quality_results
     description: Aggregated data-quality results by check date, source system and validation rule for downstream monitoring.
     columns:
       - name: check_date
-        data_tests:
-          - not_null
+        data_tests: [not_null]
       - name: source_system_code
-        data_tests:
-          - not_null
+        data_tests: [not_null]
       - name: rule_id
+        data_tests: [not_null]
+      - name: quality_dimension
         data_tests:
           - not_null
+          - accepted_values:
+              arguments:
+                values: ['MAPPING_COVERAGE', 'COMPLETENESS', 'VALIDITY']
       - name: records_checked
-        data_tests:
-          - not_null
+        data_tests: [not_null]
+      - name: records_passed
+        data_tests: [not_null]
       - name: records_failed
-        data_tests:
-          - not_null
+        data_tests: [not_null]
       - name: pass_rate
-        data_tests:
-          - not_null
-      - name: mapping_coverage_rate
-        data_tests:
-          - not_null
+        data_tests: [not_null]
