@@ -5,7 +5,9 @@ active_mappings as (
     select
         source_system_code,
         source_hotel_code,
-        hotel_id
+        hotel_id,
+        effective_from,
+        effective_to
     from {{ ref('map_hotel_source_to_canonical') }}
     where mapping_status = 'ACTIVE'
 )
@@ -26,3 +28,5 @@ from bookings
 left join active_mappings
     on bookings.source_system_code = active_mappings.source_system_code
    and bookings.source_hotel_code = active_mappings.source_hotel_code
+   and (active_mappings.effective_from is null or bookings.booking_date >= active_mappings.effective_from)
+   and (active_mappings.effective_to is null or bookings.booking_date <= active_mappings.effective_to)

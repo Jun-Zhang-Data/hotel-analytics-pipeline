@@ -16,7 +16,7 @@ models:
                 field: hotel_id
 
   - name: dim_hotels
-    description: One row per hotel.
+    description: One governed row per hotel, sourced from the canonical hotel master for trusted downstream analytics.
     columns:
       - name: hotel_id
         data_tests:
