@@ -4,10 +4,12 @@
 
 The pipeline is a local, containerized analytics platform that demonstrates governed source onboarding, canonicalization, data-quality controls, structured exceptions, trusted analytical outputs, and reporting-ready marts.
 
+Operational booking and payment data enter through Python ingestion into PostgreSQL raw tables. Governed hotel master data, source-system reference values, and source-to-canonical mappings are maintained separately as dbt seeds so downstream models have a clear canonical source of truth.
+
 ## Logical flow
 
 ```text
-CSV sources
+Operational CSV sources (bookings, payments)
   ↓
 Python ingestion
   ↓
@@ -15,13 +17,14 @@ PostgreSQL raw
   ↓
 dbt staging
   ↓
-Master / reference standardization
-  ↓
-Validation and source-to-canonical mapping
+Validation and source-to-canonical mapping ← governed dbt seeds
+                                     ├─ hotel master
+                                     ├─ source-system reference
+                                     └─ source-to-canonical mappings
   ├─ failed records → structured exception tables
   └─ passed records → trusted intermediate layer
   ↓
-Core facts and dimensions
+Core facts and governed dimensions
   ↓
 Operational marts + DQ marts
   ↓
@@ -32,32 +35,35 @@ Power BI-ready reporting models
 
 ### Raw
 
-Purpose: preserve source data and ingestion metadata.
+Purpose: preserve operational source data and ingestion metadata.
 
 Key characteristics:
-- source-file traceability
+- booking and payment source-file traceability
 - ingestion IDs
 - idempotent loading
 - source-native booking hotel codes
 
 ### Staging
 
-Purpose: normalize types and source representations without introducing business-domain canonical IDs.
+Purpose: normalize operational source types and representations without introducing business-domain canonical IDs.
 
 Examples:
 - standardized source-system codes
 - source hotel codes
 - booking status normalization
+- payment amount/currency normalization
 - date/timestamp casting
 
 ### Master and reference
 
-Purpose: separate canonical entities, governed reference values, and source-to-standard mappings.
+Purpose: separate canonical entities, governed reference values, and source-to-standard mappings from operational ingestion.
 
-Models:
+Seed-backed models:
 - `dim_hotel_master`
 - `dim_source_system_reference`
 - `map_hotel_source_to_canonical`
+
+The governed hotel master is the source of truth for the downstream `dim_hotels` dimension.
 
 ### Validation and quality
 
@@ -109,9 +115,11 @@ generate_source_data
 → dbt_build_prod
 ```
 
+The generated operational source files are `bookings.csv` and `payments.csv`; governed master/reference inputs are loaded by dbt as seeds during `dbt build`.
+
 ## CI validation
 
-GitHub Actions starts PostgreSQL, initializes the warehouse, generates and loads sample data, runs `dbt debug`, then runs `dbt build` so transformations, generic tests, singular business-rule tests, DQ tests, and UAT tests execute together.
+GitHub Actions starts PostgreSQL, initializes the warehouse, generates and loads operational sample data, runs `dbt debug`, then runs `dbt build` so seeds, transformations, generic tests, singular business-rule tests, DQ tests, and UAT tests execute together.
 
 ## Governance evidence in the repository
 
