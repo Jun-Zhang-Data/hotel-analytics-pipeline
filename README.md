@@ -2,17 +2,17 @@
 
 A production-style local analytics engineering project for hotel booking data, built with PostgreSQL, dbt, Apache Airflow, Docker, Python, and GitHub Actions.
 
-The project demonstrates how source-native operational data can be standardized into governed master/reference data, validated through explicit data-quality rules, routed into structured exception outputs, transformed into trusted analytical models, and exposed through reporting-ready marts.
+The project demonstrates how operational booking and payment data can be ingested and standardized, enriched with governed master/reference data, validated through explicit data-quality rules, routed into structured exception outputs, transformed into trusted analytical models, and exposed through reporting-ready marts.
 
 ## What this repository implements
 
-The pipeline processes hotel, booking, and payment data and includes:
+The pipeline processes operational booking and payment data and enriches them with governed hotel master, source-system reference, and source-to-canonical mapping data. It includes:
 
 - raw ingestion with source traceability and idempotent loading
 - dbt staging, intermediate, core, quality, and mart layers
 - canonical hotel master data
 - source-system reference data
-- source-to-canonical hotel mappings
+- effective-date-aware source-to-canonical hotel mappings
 - mapping, completeness, and validity controls
 - structured exception tables
 - data-quality KPI models
@@ -27,17 +27,22 @@ The pipeline processes hotel, booking, and payment data and includes:
 ## End-to-end data flow
 
 ```text
-CSV source data
+Operational CSV sources (bookings, payments)
 → Python ingestion
 → PostgreSQL raw tables
 → dbt staging
-→ source-to-canonical hotel mapping
+→ source-to-canonical hotel mapping ← governed dbt seeds
+                                  ├─ hotel master
+                                  ├─ source-system reference
+                                  └─ source-to-canonical mappings
 → data-quality validation
 → structured exceptions OR trusted booking flow
-→ core fact/dimension models
+→ core facts / governed dimensions
 → operational + DQ marts
 → Power BI-ready reporting layer
 ```
+
+The generated operational source files are `bookings.csv` and `payments.csv`. Governed hotel master/reference inputs are maintained separately as dbt seeds and loaded during `dbt build`.
 
 ## Master and reference data
 
@@ -54,7 +59,9 @@ PMS_A / STO01  → H001
 PMS_B / SE-STH → H001
 ```
 
-The mapping layer includes dbt controls for required fields, accepted lifecycle values, referential integrity, and duplicate active mappings.
+The mapping layer includes dbt controls for required fields, accepted lifecycle values, referential integrity, effective-date-aware mapping logic, and safeguards against a booking matching multiple temporal mappings.
+
+The governed hotel master is the source of truth for the downstream `dim_hotels` dimension.
 
 ## Data quality framework
 
@@ -64,7 +71,7 @@ The implemented DQ framework currently covers three quality dimensions:
 
 `DQ_MAP_HOTEL_001`
 
-A booking source hotel code must resolve to an active canonical hotel mapping.
+A booking source hotel code must resolve to an active canonical hotel mapping that is valid for the booking date.
 
 Failures are written to:
 
@@ -201,11 +208,11 @@ After parity was verified, the refactored model replaced the old implementation 
 GitHub Actions validates pull requests and pushes to `master` by:
 
 - starting PostgreSQL 16
-- initializing warehouse schemas and raw tables
-- generating deterministic sample data
-- loading raw data with Python
+- initializing warehouse schemas and operational raw tables
+- generating deterministic booking and payment sample data
+- loading operational raw data with Python
 - running `dbt debug`
-- running `dbt build`
+- running `dbt build`, including seeds
 - executing model tests, DQ tests, business-rule tests, and UAT tests
 
 This provides integration-level validation before changes are merged.
@@ -245,6 +252,7 @@ Python · SQL · PostgreSQL · dbt · Apache Airflow · Docker · Docker Compose
 - master data management concepts
 - reference data management
 - source-to-standard mappings
+- temporal/effective-date mapping logic
 - data-quality rule design
 - completeness, validity, mapping coverage, and referential-integrity controls
 - structured exception handling
@@ -265,9 +273,9 @@ This is a local, containerized portfolio implementation rather than a deployed e
 Implemented:
 
 - PostgreSQL warehouse
-- Python ingestion
+- Python ingestion for operational booking/payment data
 - dbt transformation and validation
-- master/reference mapping
+- seed-backed master/reference mapping
 - structured exception outputs
 - DQ KPI marts
 - formal UAT tests
@@ -292,19 +300,19 @@ Not implemented:
 docker compose up -d --build
 ```
 
-Generate sample data:
+Generate operational sample data:
 
 ```bash
 docker compose exec airflow-webserver bash -lc "cd /opt/project && python scripts/generate_data.py"
 ```
 
-Load raw data:
+Load operational raw data:
 
 ```bash
 docker compose exec airflow-webserver bash -lc "cd /opt/project && python scripts/load_raw.py"
 ```
 
-Build DEV models:
+Build DEV models and load governed dbt seeds:
 
 ```bash
 docker compose exec airflow-webserver bash -lc "cd /opt/project/dbt_hotel && dbt build --target dev --profiles-dir ."
