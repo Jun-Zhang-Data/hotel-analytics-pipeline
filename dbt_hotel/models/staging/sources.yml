@@ -4,6 +4,5 @@ sources:
   - name: raw
     schema: raw
     tables:
-      - name: hotels
       - name: bookings
       - name: payments
