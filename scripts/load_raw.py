@@ -16,18 +16,6 @@ DB_USER = os.getenv("DB_USER", "analytics")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "analytics")
 
 CONFIG = {
-    "hotels": {
-        "file": DATA_DIR / "hotels.csv",
-        "business_key": "hotel_id",
-        "columns": [
-            "ingestion_id",
-            "hotel_id",
-            "hotel_name",
-            "city",
-            "source_updated_at",
-            "source_file",
-        ],
-    },
     "bookings": {
         "file": DATA_DIR / "bookings.csv",
         "business_key": "booking_id",
