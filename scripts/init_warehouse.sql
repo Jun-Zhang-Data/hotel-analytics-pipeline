@@ -50,3 +50,17 @@ CREATE TABLE IF NOT EXISTS ops.ingestion_runs (
 
 CREATE INDEX IF NOT EXISTS idx_ingestion_runs_dataset_completed
     ON ops.ingestion_runs (dataset_name, completed_at DESC);
+
+CREATE TABLE IF NOT EXISTS ops.dq_exception_actions (
+    action_id UUID PRIMARY KEY,
+    exception_id TEXT NOT NULL,
+    action_status TEXT NOT NULL,
+    actor TEXT NOT NULL,
+    note TEXT,
+    action_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT dq_exception_actions_status_chk
+        CHECK (action_status IN ('ACKNOWLEDGED', 'RESOLVED', 'REPROCESSED'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_dq_exception_actions_exception_time
+    ON ops.dq_exception_actions (exception_id, action_at DESC);
