@@ -18,6 +18,9 @@ CREATE TABLE IF NOT EXISTS raw.bookings (
     ingested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE INDEX IF NOT EXISTS idx_raw_bookings_ingested_booking
+    ON raw.bookings (ingested_at, booking_id);
+
 CREATE TABLE IF NOT EXISTS raw.payments (
     ingestion_id TEXT PRIMARY KEY,
     payment_id TEXT NOT NULL,
@@ -28,6 +31,9 @@ CREATE TABLE IF NOT EXISTS raw.payments (
     source_file TEXT,
     ingested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_raw_payments_ingested_booking
+    ON raw.payments (ingested_at, booking_id);
 
 CREATE TABLE IF NOT EXISTS ops.ingestion_runs (
     run_id TEXT NOT NULL,
