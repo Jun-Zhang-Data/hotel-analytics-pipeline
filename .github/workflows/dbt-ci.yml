@@ -45,7 +45,13 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pandas==2.2.3 psycopg2-binary==2.9.10 dbt-postgres==1.9.0
+          pip install pandas==2.2.3 psycopg2-binary==2.9.10 dbt-postgres==1.9.0 ruff==0.13.2
+
+      - name: Lint Python
+        run: ruff check scripts airflow/dags
+
+      - name: Compile Python
+        run: python -m compileall -q scripts airflow/dags
 
       - name: Install PostgreSQL client
         run: |
@@ -61,8 +67,20 @@ jobs:
       - name: Generate sample data
         run: python scripts/generate_data.py
 
+      - name: Validate source contracts
+        run: python scripts/validate_source_contracts.py
+
       - name: Load raw data
-        run: python scripts/load_raw.py
+        run: python scripts/load_raw.py --run-id ci-first-load
+
+      - name: Prove idempotent re-run
+        run: python scripts/load_raw.py --run-id ci-idempotency-rerun
+
+      - name: Assert second load inserted no duplicates
+        env:
+          PGPASSWORD: analytics
+        run: |
+          test "$(psql -h localhost -U analytics -d hotel -Atc "select coalesce(sum(inserted_rows), -1) from ops.ingestion_runs where run_id='ci-idempotency-rerun';")" = "0"
 
       - name: Validate dbt project
         working-directory: dbt_hotel
@@ -71,3 +89,14 @@ jobs:
       - name: Build and test dbt project
         working-directory: dbt_hotel
         run: dbt build --profiles-dir . --target dev
+
+      - name: Exercise operational health checks against deterministic fixture
+        env:
+          TARGET_SCHEMA: analytics_dev
+          FRESHNESS_WARNING_HOURS: "1000"
+          FRESHNESS_BLOCKING_HOURS: "2000"
+          DQ_WARNING_PASS_RATE: "0.85"
+          DQ_BLOCKING_PASS_RATE: "0.70"
+          MAPPING_WARNING_RATE: "0.90"
+          MAPPING_BLOCKING_RATE: "0.80"
+        run: python scripts/check_operational_health.py
