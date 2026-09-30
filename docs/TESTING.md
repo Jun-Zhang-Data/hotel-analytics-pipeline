@@ -18,6 +18,15 @@ CI initializes a fresh PostgreSQL warehouse, loads the deterministic fixture, lo
 
 Bounded backfill behavior is tested with `--start-date`/`--end-date` against booking data. The test harness appends versioned source corrections, processes only the affected historical date range, and verifies that only the new source version is inserted while existing versions are skipped as duplicates.
 
+## Exception lifecycle persistence test
+
+After the initial dbt build creates structured exceptions, CI selects one exception from `mart_exception_register`, records an `ACKNOWLEDGED` action through `scripts/manage_dq_exception.py`, rebuilds the entire dbt project, and verifies two invariants:
+
+- the exception still reports `ACKNOWLEDGED` after the rebuild;
+- exactly one matching append-only action exists in `ops.dq_exception_actions`.
+
+This proves that operational disposition survives recreation of dbt-generated exception tables and remains separate from trusted-data gating.
+
 ## Late-arriving data test
 
 `scripts/reliability_scenarios.py` appends a newer `B001` source version after the initial pipeline run. CI backfills the affected booking date, rebuilds dbt, and verifies:
@@ -41,7 +50,7 @@ This demonstrates the recovery boundary: successful raw ingestion remains durabl
 
 ## dbt tests
 
-`dbt build` executes seeds, transformations, generic schema tests, singular business-rule tests, DQ tests, reliability tests, and UAT tests together. Existing acceptance tests cover unmapped hotels, missing guest IDs, invalid stay dates, valid records reaching trusted output, and expected DQ behavior.
+`dbt build` executes seeds, transformations, generic schema tests, singular business-rule tests, DQ tests, reliability tests, and UAT tests together. Existing acceptance tests cover unmapped hotels, missing guest IDs, invalid stay dates, valid records reaching trusted output, expected DQ behavior, and lifecycle-aware exception mart constraints.
 
 ## Operational-health tests
 
@@ -49,14 +58,14 @@ CI exercises `scripts/check_operational_health.py` using thresholds adjusted for
 
 ## Deliberately broken changes
 
-The repository now contains automated negative-path evidence rather than relying only on manual demonstrations:
+The repository contains automated negative-path evidence rather than relying only on manual demonstrations:
 
 - a missing required source column must fail the source-contract gate;
 - a forced dbt reliability test must fail downstream processing;
 - both scenarios must subsequently recover and pass after the fault is removed.
 
-Additional manual failure demonstrations can still be used for Python syntax errors or business-rule regressions, but they are not required to prove the two implemented recovery paths.
+Additional manual failure demonstrations can still be used for Python syntax errors or business-rule regressions, but they are not required to prove the implemented recovery paths.
 
 ## Test responsibility split
 
-Static checks validate code shape. Contract tests validate source compatibility. Ingestion tests validate deterministic loading/retry behavior. Reliability scenarios validate late data, historical corrections, and partial-failure recovery. dbt tests validate transformations and business rules. UAT validates user-facing acceptance behavior. Operational health checks validate whether successful execution still produced data that is fresh and within defined quality/volume thresholds.
+Static checks validate code shape. Contract tests validate source compatibility. Ingestion tests validate deterministic loading/retry behavior. Exception lifecycle tests validate persistence of operational disposition across dbt rebuilds. Reliability scenarios validate late data, historical corrections, and partial-failure recovery. dbt tests validate transformations and business rules. UAT validates user-facing acceptance behavior. Operational health checks validate whether successful execution still produced data that is fresh and within defined quality/volume thresholds.

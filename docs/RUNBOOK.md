@@ -41,10 +41,26 @@ A rerun with the same source business key and `source_updated_at` generates the 
 ## DQ spike
 
 1. Inspect `fct_data_quality_results` by `check_date`, `source_system_code`, and `rule_id`.
-2. Inspect the corresponding exception table for affected record keys.
+2. Inspect `mart_exception_register` for affected record keys and current lifecycle state.
 3. Determine whether the spike is mapping coverage, completeness, or validity.
 4. For mapping failures, inspect source-to-canonical mapping coverage and effective dates before adding/changing a mapping.
 5. Do not edit trusted facts directly; resolve source/reference logic and re-run the affected range.
+
+## Exception lifecycle
+
+Detected exceptions default to `OPEN`. Record operational disposition with the append-only command rather than editing dbt-generated exception tables:
+
+```bash
+python scripts/manage_dq_exception.py \
+  --exception-id <exception_id> \
+  --status ACKNOWLEDGED \
+  --actor data-team \
+  --note "Investigation started"
+```
+
+Supported action statuses are `ACKNOWLEDGED`, `RESOLVED`, and `REPROCESSED`. The latest action is surfaced in `mart_exception_register`; the full audit history remains in `ops.dq_exception_actions`.
+
+Acknowledging an exception does not allow a blocking record into trusted facts. Fix the underlying source/reference issue, rerun the affected data, confirm the blocking rule no longer applies, and then record the appropriate lifecycle action. CI verifies that an acknowledgement persists across a complete dbt rebuild.
 
 ## Unmapped canonical entity
 
@@ -61,4 +77,5 @@ Application changes are rolled back through Git: revert the offending commit/PR,
 - Ingestion failure: database/connectivity/load error recorded in `ops.ingestion_runs`.
 - Transformation failure: dbt model compilation/execution failure.
 - DQ failure: validly ingested record violates a trusted-data rule and is routed to exceptions.
+- DQ lifecycle state: operational action history in `ops.dq_exception_actions`, separate from rule detection and trusted-data gating.
 - Serving/health failure: marts exist but operational thresholds indicate stale or degraded output.

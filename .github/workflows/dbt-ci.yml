@@ -119,6 +119,27 @@ jobs:
         working-directory: dbt_hotel
         run: dbt build --profiles-dir . --target dev
 
+      - name: Prove exception lifecycle action persists across rebuild
+        shell: bash
+        env:
+          PGPASSWORD: analytics
+        run: |
+          exception_id="$(psql -h localhost -U analytics -d hotel -Atc "select exception_id from analytics_dev.mart_exception_register order by exception_id limit 1;")"
+          test -n "$exception_id"
+
+          python scripts/manage_dq_exception.py \
+            --exception-id "$exception_id" \
+            --status ACKNOWLEDGED \
+            --actor ci \
+            --note "CI lifecycle persistence check"
+
+          cd dbt_hotel
+          dbt build --profiles-dir . --target dev
+          cd ..
+
+          test "$(psql -h localhost -U analytics -d hotel -Atc "select exception_status from analytics_dev.mart_exception_register where exception_id='$exception_id';")" = "ACKNOWLEDGED"
+          test "$(psql -h localhost -U analytics -d hotel -Atc "select count(*) from ops.dq_exception_actions where exception_id='$exception_id' and action_status='ACKNOWLEDGED';")" = "1"
+
       - name: Prove late-arriving update is incorporated without duplication
         run: |
           python scripts/reliability_scenarios.py append-late-arrival
