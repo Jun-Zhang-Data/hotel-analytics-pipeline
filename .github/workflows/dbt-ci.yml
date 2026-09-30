@@ -119,6 +119,44 @@ jobs:
         working-directory: dbt_hotel
         run: dbt build --profiles-dir . --target dev
 
+      - name: Prove late-arriving update is incorporated without duplication
+        run: |
+          python scripts/reliability_scenarios.py append-late-arrival
+          python scripts/validate_source_contracts.py
+          python scripts/load_raw.py --dataset bookings --start-date 2026-09-01 --end-date 2026-09-01 --run-id ci-late-arrival
+          cd dbt_hotel
+          dbt build --profiles-dir . --target dev
+          cd ..
+          python scripts/reliability_scenarios.py assert-late-arrival
+
+      - name: Prove historical correction can be safely backfilled
+        run: |
+          python scripts/reliability_scenarios.py append-historical-correction
+          python scripts/validate_source_contracts.py
+          python scripts/load_raw.py --dataset bookings --start-date 2026-09-01 --end-date 2026-09-01 --run-id ci-historical-correction
+          cd dbt_hotel
+          dbt build --profiles-dir . --target dev
+          cd ..
+          python scripts/reliability_scenarios.py assert-historical-correction
+
+      - name: Prove downstream failure is visible and clean rerun recovers
+        shell: bash
+        run: |
+          cd dbt_hotel
+          set +e
+          dbt test --profiles-dir . --target dev --select assert_no_forced_failure --vars '{force_reliability_failure: true}'
+          status=$?
+          set -e
+
+          if [ "$status" -eq 0 ]; then
+            echo "Expected controlled downstream dbt test failure, but it passed."
+            exit 1
+          fi
+
+          dbt build --profiles-dir . --target dev
+          cd ..
+          python scripts/reliability_scenarios.py assert-recovered-state
+
       - name: Exercise operational health checks against deterministic fixture
         env:
           TARGET_SCHEMA: analytics_dev
