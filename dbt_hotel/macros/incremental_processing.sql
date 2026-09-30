@@ -25,7 +25,7 @@
 )
 {% endmacro %}
 
-{% macro advance_incremental_watermarks(model_name) %}
+{% macro advance_incremental_watermark(model_name, source_name) %}
     insert into ops.incremental_model_watermarks (
         model_name,
         source_name,
@@ -34,27 +34,10 @@
     )
     select
         '{{ model_name }}',
-        'bookings',
+        '{{ source_name }}',
         coalesce(max(ingested_at), cast('1900-01-01 00:00:00' as timestamp)),
         current_timestamp
-    from raw.bookings
-    on conflict (model_name, source_name)
-    do update set
-        last_processed_ingested_at = excluded.last_processed_ingested_at,
-        updated_at = excluded.updated_at;
-
-    insert into ops.incremental_model_watermarks (
-        model_name,
-        source_name,
-        last_processed_ingested_at,
-        updated_at
-    )
-    select
-        '{{ model_name }}',
-        'payments',
-        coalesce(max(ingested_at), cast('1900-01-01 00:00:00' as timestamp)),
-        current_timestamp
-    from raw.payments
+    from {{ source('raw', source_name) }}
     on conflict (model_name, source_name)
     do update set
         last_processed_ingested_at = excluded.last_processed_ingested_at,
