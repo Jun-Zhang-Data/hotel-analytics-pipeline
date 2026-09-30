@@ -35,3 +35,39 @@
 **Recovery:** verify the business identity, add or correct governed mapping data, rerun the affected date range, rebuild dbt, and confirm both exception count and mapping coverage recover.
 
 **Prevention/evidence:** mapping failures remain visible as structured exceptions with rule ID, severity, responsible domain, and affected record key instead of silently contaminating trusted facts.
+
+## Incident 4 — Late-arriving booking update
+
+**Symptom:** an existing booking receives a newer source version after the normal processing window; the trusted model still shows the older business state until the update is ingested and transformed.
+
+**Investigation:** compare all raw versions for the booking by `source_updated_at`, then inspect `int_bookings_latest` and the trusted fact. The raw layer should preserve both versions while the latest-state model should select only the newest version.
+
+**Root cause:** the operational source delivered a legitimate update after the original booking had already been processed.
+
+**Recovery:** run a bounded backfill for the affected booking-date range, then rebuild dbt. The deterministic ingestion key preserves the new source version without duplicating the earlier one, and `int_bookings_latest` resolves the trusted state using the newest `source_updated_at`.
+
+**Prevention/evidence:** CI appends a later `B001` version, performs a date-bounded backfill, rebuilds dbt, and asserts two raw versions but one trusted row with the later status.
+
+## Incident 5 — Historical correction
+
+**Symptom:** a historical booking attribute is corrected after downstream marts have already been produced.
+
+**Investigation:** identify the affected business key and date range, compare source versions, and confirm which downstream facts/marts consume the corrected field.
+
+**Root cause:** the source system corrected previously supplied historical data rather than emitting a new business entity.
+
+**Recovery:** append the corrected source version, run the documented historical date-range backfill, and rebuild dbt. Raw history remains intact while trusted models resolve to the corrected latest version.
+
+**Prevention/evidence:** CI applies a later `B003` correction, processes only the historical booking-date range, and asserts that the trusted `check_out_date` changes without creating a second trusted booking.
+
+## Incident 6 — Partial pipeline failure after successful ingestion
+
+**Symptom:** ingestion succeeds but a downstream dbt validation step fails. Raw data is already committed, so blindly replaying every upstream step is unnecessary and could make diagnosis harder.
+
+**Investigation:** confirm `ops.ingestion_runs` shows successful ingestion, inspect the failing dbt test/model, and verify raw row counts and source versions are unchanged.
+
+**Root cause:** a downstream transformation/test failure rather than a source or ingestion failure.
+
+**Recovery:** correct or remove the downstream fault and rerun dbt from the safe raw state. Because ingestion is idempotent and raw history is preserved, recovery does not require destructive cleanup.
+
+**Prevention/evidence:** CI deliberately forces a singular dbt test to fail, confirms the failure is non-zero, then performs a clean `dbt build` and asserts both late-arrival and historical-correction trusted states are still correct.
