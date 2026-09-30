@@ -70,6 +70,35 @@ jobs:
       - name: Validate source contracts
         run: python scripts/validate_source_contracts.py
 
+      - name: Prove breaking source contract is blocked and recoverable
+        shell: bash
+        run: |
+          cp data/bookings.csv /tmp/bookings.csv
+          trap 'mv /tmp/bookings.csv data/bookings.csv' EXIT
+
+          python - <<'PY'
+          import pandas as pd
+
+          path = "data/bookings.csv"
+          df = pd.read_csv(path)
+          df = df.drop(columns=["source_hotel_code"])
+          df.to_csv(path, index=False)
+          PY
+
+          set +e
+          python scripts/validate_source_contracts.py
+          status=$?
+          set -e
+
+          if [ "$status" -eq 0 ]; then
+            echo "Expected breaking source contract validation to fail, but it passed."
+            exit 1
+          fi
+
+          mv /tmp/bookings.csv data/bookings.csv
+          trap - EXIT
+          python scripts/validate_source_contracts.py
+
       - name: Load raw data
         run: python scripts/load_raw.py --run-id ci-first-load
 
