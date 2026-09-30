@@ -6,3 +6,8 @@ sources:
     tables:
       - name: bookings
       - name: payments
+
+  - name: ops
+    schema: ops
+    tables:
+      - name: dq_exception_actions
