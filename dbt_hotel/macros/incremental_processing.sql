@@ -45,6 +45,7 @@
 {% endmacro %}
 
 {% macro delete_affected_hotel_daily_partitions(model_name) %}
+    {% if is_incremental() %}
     delete from {{ this }} as target
     using (
         select distinct partition_date, partition_hotel_id
@@ -68,4 +69,7 @@
     ) partitions
     where target.booking_date = partitions.partition_date
       and target.hotel_id = partitions.partition_hotel_id
+    {% else %}
+    select 1
+    {% endif %}
 {% endmacro %}
