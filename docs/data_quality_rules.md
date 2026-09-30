@@ -2,9 +2,17 @@
 
 This catalogue records implemented data-quality controls. It only documents rules that exist in the repository.
 
+## Severity and trusted-data gating
+
+All three currently implemented booking rules are `BLOCKING` for trusted booking publication. A failing record is preserved in a structured exception model and excluded from trusted booking facts. This is intentionally separate from technical pipeline failures such as an unavailable database or a breaking source contract.
+
+Exception rows include a stable rule ID, detection timestamp, source system, booking entity/record key, severity, responsible domain, invalid value, failure reason, and lifecycle status (`OPEN` by default). Aggregated affected-record counts remain available through DQ marts.
+
 ## DQ_MAP_HOTEL_001 — Source hotel must map to an active canonical hotel
 
 - Quality dimension: MAPPING_COVERAGE
+- Severity: BLOCKING
+- Responsible domain: hotel-master-data
 - Scope: booking records
 - Source fields: source_system_code, source_hotel_code
 - Rule: each booking source hotel code must resolve through an ACTIVE source-to-canonical hotel mapping
@@ -16,6 +24,8 @@ This catalogue records implemented data-quality controls. It only documents rule
 ## DQ_COMP_GUEST_001 — Booking guest_id must be present
 
 - Quality dimension: COMPLETENESS
+- Severity: BLOCKING
+- Responsible domain: booking-data
 - Scope: mapped booking records
 - Source field: guest_id
 - Rule: each mapped booking must contain guest_id before entering trusted downstream models
@@ -27,6 +37,8 @@ This catalogue records implemented data-quality controls. It only documents rule
 ## DQ_VALID_STAY_001 — Check-out date must not be before check-in date
 
 - Quality dimension: VALIDITY
+- Severity: BLOCKING
+- Responsible domain: booking-data
 - Scope: mapped booking records
 - Source fields: check_in_date, check_out_date
 - Rule: check_out_date must be greater than or equal to check_in_date
@@ -35,8 +47,8 @@ This catalogue records implemented data-quality controls. It only documents rule
 - Exception lifecycle default: OPEN
 - KPI outputs: records checked, records passed, records failed, pass rate
 
-## Reporting outputs
+## Reporting and operational signals
 
-Implemented rules feed fct_data_quality_results, mart_dq_daily, mart_dq_by_source and mart_exception_summary.
+Implemented rules feed `fct_data_quality_results`, `mart_dq_daily`, `mart_dq_by_source`, and `mart_exception_summary`.
 
-Mapping coverage is calculated only from the mapping rule. Overall DQ pass rate aggregates all implemented rule checks.
+Mapping coverage is calculated only from the mapping rule. Overall DQ pass rate aggregates implemented rule checks. `scripts/check_operational_health.py` classifies DQ pass rate and mapping coverage against environment-configurable warning/blocking thresholds so a successful pipeline run can still surface degraded data quality.

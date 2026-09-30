@@ -1,5 +1,8 @@
+import argparse
 import hashlib
 import os
+import uuid
+from datetime import date
 from pathlib import Path
 
 import pandas as pd
@@ -19,6 +22,7 @@ CONFIG = {
     "bookings": {
         "file": DATA_DIR / "bookings.csv",
         "business_key": "booking_id",
+        "backfill_field": "booking_date",
         "columns": [
             "ingestion_id",
             "booking_id",
@@ -36,6 +40,7 @@ CONFIG = {
     "payments": {
         "file": DATA_DIR / "payments.csv",
         "business_key": "payment_id",
+        "backfill_field": "source_updated_at",
         "columns": [
             "ingestion_id",
             "payment_id",
@@ -64,8 +69,65 @@ def get_connection():
     )
 
 
-def load_dataset(table_name, cfg):
-    df = pd.read_csv(cfg["file"])
+def filter_backfill(df, field, start_date, end_date):
+    if not start_date and not end_date:
+        return df
+
+    dates = pd.to_datetime(df[field], errors="raise").dt.date
+    mask = pd.Series(True, index=df.index)
+    if start_date:
+        mask &= dates >= start_date
+    if end_date:
+        mask &= dates <= end_date
+    return df.loc[mask].copy()
+
+
+def record_run_start(connection, run_id, dataset_name, source_rows, candidate_rows, start_date, end_date):
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+            INSERT INTO ops.ingestion_runs (
+                run_id, dataset_name, status, source_rows, candidate_rows,
+                backfill_start, backfill_end
+            ) VALUES (%s, %s, 'STARTED', %s, %s, %s, %s)
+            """,
+            (run_id, dataset_name, source_rows, candidate_rows, start_date, end_date),
+        )
+    connection.commit()
+
+
+def record_run_end(connection, run_id, dataset_name, status, inserted_rows=0, duplicate_rows=0,
+                   min_source_updated_at=None, max_source_updated_at=None, error_message=None):
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+            UPDATE ops.ingestion_runs
+            SET completed_at = CURRENT_TIMESTAMP,
+                status = %s,
+                inserted_rows = %s,
+                duplicate_rows = %s,
+                min_source_updated_at = %s,
+                max_source_updated_at = %s,
+                error_message = %s
+            WHERE run_id = %s AND dataset_name = %s
+            """,
+            (
+                status,
+                inserted_rows,
+                duplicate_rows,
+                min_source_updated_at,
+                max_source_updated_at,
+                error_message,
+                run_id,
+                dataset_name,
+            ),
+        )
+    connection.commit()
+
+
+def load_dataset(table_name, cfg, run_id, start_date=None, end_date=None):
+    source_df = pd.read_csv(cfg["file"])
+    df = filter_backfill(source_df, cfg["backfill_field"], start_date, end_date)
     business_key = cfg["business_key"]
 
     df["ingestion_id"] = [
@@ -82,27 +144,81 @@ def load_dataset(table_name, cfg):
     rows = list(load_df.itertuples(index=False, name=None))
     column_sql = ", ".join(columns)
 
-    query = f"""
-        INSERT INTO raw.{table_name}
-        ({column_sql})
-        VALUES %s
-        ON CONFLICT (ingestion_id)
-        DO NOTHING
-    """
-
     connection = get_connection()
+    record_run_start(
+        connection,
+        run_id,
+        table_name,
+        len(source_df),
+        len(rows),
+        start_date,
+        end_date,
+    )
+
     try:
         with connection.cursor() as cursor:
-            execute_values(cursor, query, rows)
+            if rows:
+                query = f"""
+                    INSERT INTO raw.{table_name}
+                    ({column_sql})
+                    VALUES %s
+                    ON CONFLICT (ingestion_id)
+                    DO NOTHING
+                    RETURNING ingestion_id
+                """
+                execute_values(cursor, query, rows)
+                inserted_rows = cursor.rowcount
+            else:
+                inserted_rows = 0
         connection.commit()
-        print(f"Loaded {table_name}: {len(rows)} source rows processed")
-    except Exception:
+
+        duplicate_rows = len(rows) - inserted_rows
+        source_times = pd.to_datetime(df["source_updated_at"], errors="coerce") if not df.empty else None
+        min_source_updated_at = source_times.min().to_pydatetime() if source_times is not None and source_times.notna().any() else None
+        max_source_updated_at = source_times.max().to_pydatetime() if source_times is not None and source_times.notna().any() else None
+        record_run_end(
+            connection,
+            run_id,
+            table_name,
+            "SUCCESS",
+            inserted_rows,
+            duplicate_rows,
+            min_source_updated_at,
+            max_source_updated_at,
+        )
+        print(
+            f"Loaded {table_name}: candidate={len(rows)} inserted={inserted_rows} "
+            f"duplicates_skipped={duplicate_rows} run_id={run_id}"
+        )
+    except Exception as exc:
         connection.rollback()
+        record_run_end(connection, run_id, table_name, "FAILED", error_message=str(exc)[:2000])
         raise
     finally:
         connection.close()
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Idempotent raw loader with controlled backfill support")
+    parser.add_argument("--dataset", choices=["all", *CONFIG.keys()], default="all")
+    parser.add_argument("--start-date", type=date.fromisoformat)
+    parser.add_argument("--end-date", type=date.fromisoformat)
+    parser.add_argument("--run-id", default=None)
+    args = parser.parse_args()
+    if args.start_date and args.end_date and args.start_date > args.end_date:
+        parser.error("--start-date must be on or before --end-date")
+    return args
+
+
 if __name__ == "__main__":
-    for table_name, config in CONFIG.items():
-        load_dataset(table_name, config)
+    args = parse_args()
+    run_id = args.run_id or str(uuid.uuid4())
+    datasets = CONFIG.keys() if args.dataset == "all" else [args.dataset]
+    for table_name in datasets:
+        load_dataset(
+            table_name,
+            CONFIG[table_name],
+            run_id,
+            start_date=args.start_date,
+            end_date=args.end_date,
+        )

@@ -5,10 +5,13 @@ select
     current_timestamp as detected_at,
     booking_id as record_key,
     source_system_code,
+    'BOOKING' as entity,
     source_hotel_code as invalid_value,
     'DQ_MAP_HOTEL_001' as rule_id,
     'Booking hotel code must map to an active canonical hotel' as rule_name,
     'MAPPING_COVERAGE' as quality_dimension,
+    'BLOCKING' as severity,
+    'hotel-master-data' as responsible_domain,
     'source_hotel_code' as field_name,
     'No active source-to-canonical hotel mapping found' as failure_reason,
     'OPEN' as exception_status

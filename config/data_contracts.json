@@ -1,0 +1,46 @@
+{
+  "bookings": {
+    "file": "data/bookings.csv",
+    "required_columns": {
+      "booking_id": "string",
+      "source_system_code": "string",
+      "source_hotel_code": "string",
+      "guest_id": "string_nullable",
+      "booking_date": "date",
+      "check_in_date": "date",
+      "check_out_date": "date",
+      "status": "string",
+      "source_updated_at": "timestamp"
+    },
+    "allowed_values": {
+      "status": ["CONFIRMED", "CANCELLED"]
+    },
+    "breaking_changes": [
+      "missing required column",
+      "renamed required column",
+      "value incompatible with declared type"
+    ],
+    "non_breaking_changes": [
+      "additional source column"
+    ]
+  },
+  "payments": {
+    "file": "data/payments.csv",
+    "required_columns": {
+      "payment_id": "string",
+      "booking_id": "string",
+      "amount": "numeric",
+      "currency": "string",
+      "source_updated_at": "timestamp"
+    },
+    "allowed_values": {},
+    "breaking_changes": [
+      "missing required column",
+      "renamed required column",
+      "value incompatible with declared type"
+    ],
+    "non_breaking_changes": [
+      "additional source column"
+    ]
+  }
+}
