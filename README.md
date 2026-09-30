@@ -20,13 +20,14 @@ The pipeline processes operational booking and payment data and enriches them wi
 - structured exception tables with severity and ownership metadata
 - data-quality KPI models
 - operational health checks for freshness, DQ pass rate, mapping coverage, volume change, and failed ingestions
+- automated reliability scenarios for duplicate delivery, breaking contracts, late arrivals, historical corrections, and downstream failure recovery
 - source-to-target mapping documentation
 - automated UAT acceptance tests
 - Power BI-ready operational and data-quality marts
 - Airflow orchestration with retries, contract gating, backfill parameters, and a final health gate
 - Dockerized local infrastructure
-- GitHub Actions CI with linting, integration tests, idempotency proof, and deliberate contract-failure simulation
-- runbook, incident examples, testing strategy, data contracts, and Architecture Decision Records
+- GitHub Actions CI with linting, integration tests, idempotency proof, deliberate contract-failure simulation, and controlled recovery scenarios
+- runbook, incident examples, testing strategy, reliability scenario evidence, data contracts, and Architecture Decision Records
 
 ## End-to-end data flow
 
@@ -68,9 +69,26 @@ python scripts/load_raw.py --start-date 2026-09-01 --end-date 2026-09-02
 
 Airflow exposes `backfill_start` and `backfill_end` parameters and passes them to ingestion. Reprocessing remains idempotent, so historical ranges can be rerun safely.
 
+### Late-arriving data and historical correction
+
+Raw history preserves multiple legitimate source versions for the same `booking_id` when `source_updated_at` changes. `int_bookings_latest` selects the newest source version before downstream trusted models are built.
+
+CI proves this behavior in two deterministic scenarios:
+
+- a newer `B001` update arrives after the baseline load; the affected booking date is reprocessed, raw keeps both versions, and trusted output resolves to the newest status with one trusted booking row;
+- a corrected historical `B003` version is appended and bounded-reprocessed; trusted output receives the corrected field while preserving one-row-per-booking grain.
+
+### Partial downstream failure recovery
+
+CI also forces a singular dbt test to fail after raw ingestion has already succeeded. The failure is expected and visible; CI then runs a clean `dbt build` from the unchanged committed raw state and verifies the trusted dataset recovers correctly.
+
+This demonstrates that successful upstream ingestion does not need to be destructively repeated simply because a downstream transformation/test stage failed.
+
 ### Retry behavior
 
 Airflow uses controlled retries for transient task failures. The source-contract task and final operational-health task intentionally do not retry because they represent deterministic blocking conditions that require investigation rather than blind repetition.
+
+See `docs/RELIABILITY_SCENARIOS.md` for the scenario-to-mechanism evidence matrix and reproducible test sequence.
 
 ## Source data contracts
 
@@ -236,6 +254,9 @@ GitHub Actions validates pull requests and pushes to `master` by:
 - loading the same data again and asserting zero duplicate inserts
 - running `dbt debug`
 - running `dbt build`, including seeds and all dbt tests
+- appending a late-arriving booking update, bounded-reprocessing it, and verifying latest-version trusted behavior
+- appending a historical correction, bounded-reprocessing it, and verifying corrected trusted state without duplicate business rows
+- deliberately forcing a downstream dbt test failure and proving a clean rebuild recovers from unchanged raw state
 - executing operational-health checks against deterministic thresholds
 
 This provides executable evidence for safe change management and recovery behavior before changes are merged.
@@ -262,6 +283,7 @@ Key documentation:
 - `docs/RUNBOOK.md`
 - `docs/DATA_CONTRACTS.md`
 - `docs/TESTING.md`
+- `docs/RELIABILITY_SCENARIOS.md`
 - `docs/INCIDENT_EXAMPLES.md`
 - `docs/data_quality_rules.md`
 - `docs/master_reference_data.md`
@@ -287,6 +309,9 @@ Implemented:
 - Python ingestion for operational booking/payment data
 - deterministic idempotent ingestion
 - controlled backfill
+- late-arriving version handling
+- historical correction/reprocessing evidence
+- partial downstream failure/recovery evidence
 - ingestion-run observability
 - executable source data contracts
 - dbt transformation and validation
@@ -298,7 +323,7 @@ Implemented:
 - Power BI-ready marts
 - Airflow orchestration
 - GitHub Actions CI
-- runbook, incident examples, testing strategy, and ADRs
+- runbook, incident examples, reliability scenario evidence, testing strategy, and ADRs
 
 Not implemented:
 
