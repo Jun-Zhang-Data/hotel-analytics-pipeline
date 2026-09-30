@@ -1,3 +1,5 @@
+-- depends_on: {{ ref('int_booking_current_state') }}
+
 {{ config(
     materialized='incremental',
     unique_key=['booking_date', 'hotel_id'],
