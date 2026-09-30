@@ -157,8 +157,6 @@ def load_dataset(table_name, cfg, run_id, start_date=None, end_date=None):
 
     try:
         with connection.cursor() as cursor:
-            before = connection.info.transaction_status
-            _ = before
             if rows:
                 query = f"""
                     INSERT INTO raw.{table_name}
