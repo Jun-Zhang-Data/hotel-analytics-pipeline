@@ -11,3 +11,4 @@ sources:
     schema: ops
     tables:
       - name: dq_exception_actions
+      - name: incremental_model_watermarks
