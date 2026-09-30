@@ -51,6 +51,19 @@ CREATE TABLE IF NOT EXISTS ops.ingestion_runs (
 CREATE INDEX IF NOT EXISTS idx_ingestion_runs_dataset_completed
     ON ops.ingestion_runs (dataset_name, completed_at DESC);
 
+CREATE TABLE IF NOT EXISTS ops.incremental_model_watermarks (
+    model_name TEXT NOT NULL,
+    source_name TEXT NOT NULL,
+    last_processed_ingested_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (model_name, source_name),
+    CONSTRAINT incremental_model_watermarks_source_chk
+        CHECK (source_name IN ('bookings', 'payments'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_incremental_model_watermarks_updated
+    ON ops.incremental_model_watermarks (updated_at DESC);
+
 CREATE TABLE IF NOT EXISTS ops.dq_exception_actions (
     action_id UUID PRIMARY KEY,
     exception_id TEXT NOT NULL,
