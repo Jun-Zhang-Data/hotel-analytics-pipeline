@@ -5,10 +5,13 @@ select
     current_timestamp as detected_at,
     booking_id as record_key,
     source_system_code,
+    'BOOKING' as entity,
     guest_id as invalid_value,
     'DQ_COMP_GUEST_001' as rule_id,
     'Booking guest_id must be present' as rule_name,
     'COMPLETENESS' as quality_dimension,
+    'BLOCKING' as severity,
+    'booking-data' as responsible_domain,
     'guest_id' as field_name,
     'Required guest_id is missing' as failure_reason,
     'OPEN' as exception_status
