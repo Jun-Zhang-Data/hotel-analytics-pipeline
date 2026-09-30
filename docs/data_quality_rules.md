@@ -6,7 +6,9 @@ This catalogue records implemented data-quality controls. It only documents rule
 
 All three currently implemented booking rules are `BLOCKING` for trusted booking publication. A failing record is preserved in a structured exception model and excluded from trusted booking facts. This is intentionally separate from technical pipeline failures such as an unavailable database or a breaking source contract.
 
-Exception rows include a stable rule ID, detection timestamp, source system, booking entity/record key, severity, responsible domain, invalid value, failure reason, and lifecycle status (`OPEN` by default). Aggregated affected-record counts remain available through DQ marts.
+Exception rows include a stable rule ID, detection timestamp, source system, booking entity/record key, severity, responsible domain, invalid value, and failure reason. Current lifecycle status is exposed through `mart_exception_register`.
+
+Lifecycle state is separated from rule detection. Detected exceptions default to `OPEN`; append-only actions in `ops.dq_exception_actions` can move the operational status to `ACKNOWLEDGED`, `RESOLVED`, or `REPROCESSED`. Lifecycle actions never bypass blocking trusted-data rules.
 
 ## DQ_MAP_HOTEL_001 — Source hotel must map to an active canonical hotel
 
@@ -47,8 +49,14 @@ Exception rows include a stable rule ID, detection timestamp, source system, boo
 - Exception lifecycle default: OPEN
 - KPI outputs: records checked, records passed, records failed, pass rate
 
+## Exception lifecycle reporting
+
+`mart_exception_register` unions current structured exceptions and enriches each exception with its latest operational lifecycle action. `mart_exception_summary` aggregates the register by date, source, rule, quality dimension, and current status.
+
+The lifecycle action log is intentionally lightweight. It provides status history, actor, note, and timestamp, but does not claim to be a complete case-management or ticketing application.
+
 ## Reporting and operational signals
 
-Implemented rules feed `fct_data_quality_results`, `mart_dq_daily`, `mart_dq_by_source`, and `mart_exception_summary`.
+Implemented rules feed `fct_data_quality_results`, `mart_dq_daily`, `mart_dq_by_source`, `mart_exception_register`, and `mart_exception_summary`.
 
 Mapping coverage is calculated only from the mapping rule. Overall DQ pass rate aggregates implemented rule checks. `scripts/check_operational_health.py` classifies DQ pass rate and mapping coverage against environment-configurable warning/blocking thresholds so a successful pipeline run can still surface degraded data quality.
