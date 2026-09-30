@@ -37,6 +37,27 @@ models:
         data_tests:
           - not_null
 
+  - name: mart_exception_register
+    description: Current structured DQ exceptions enriched with latest append-only lifecycle action.
+    columns:
+      - name: exception_id
+        data_tests:
+          - not_null
+          - unique
+      - name: rule_id
+        data_tests:
+          - not_null
+      - name: severity
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['INFO', 'WARNING', 'BLOCKING']
+      - name: exception_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['OPEN', 'ACKNOWLEDGED', 'RESOLVED', 'REPROCESSED']
+
   - name: mart_exception_summary
     description: Exception counts by date, source, rule, quality dimension and lifecycle status.
     columns:
@@ -46,6 +67,11 @@ models:
       - name: rule_id
         data_tests:
           - not_null
+      - name: exception_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['OPEN', 'ACKNOWLEDGED', 'RESOLVED', 'REPROCESSED']
       - name: exception_count
         data_tests:
           - not_null
