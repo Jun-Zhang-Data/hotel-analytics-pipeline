@@ -1,3 +1,5 @@
+{{ config(materialized='view') }}
+
 select
     booking_id,
     hotel_id,
@@ -8,4 +10,5 @@ select
     booking_status,
     total_payment as revenue,
     booking_lead_days
-from {{ ref('int_bookings_enriched') }}
+from {{ ref('int_booking_current_state') }}
+where is_trusted = true

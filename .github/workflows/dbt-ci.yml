@@ -119,6 +119,12 @@ jobs:
         working-directory: dbt_hotel
         run: dbt build --profiles-dir . --target dev
 
+      - name: Assert incremental watermarks initialized
+        env:
+          PGPASSWORD: analytics
+        run: |
+          test "$(psql -h localhost -U analytics -d hotel -Atc "select count(*) from ops.incremental_model_watermarks where model_name in ('int_booking_current_state','mart_hotel_daily');")" = "4"
+
       - name: Prove exception lifecycle action persists across rebuild
         shell: bash
         env:
@@ -140,8 +146,14 @@ jobs:
           test "$(psql -h localhost -U analytics -d hotel -Atc "select exception_status from analytics_dev.mart_exception_register where exception_id='$exception_id';")" = "ACKNOWLEDGED"
           test "$(psql -h localhost -U analytics -d hotel -Atc "select count(*) from ops.dq_exception_actions where exception_id='$exception_id' and action_status='ACKNOWLEDGED';")" = "1"
 
-      - name: Prove late-arriving update is incorporated without duplication
+      - name: Prove late-arriving update uses changed-key incremental processing
+        shell: bash
+        env:
+          PGPASSWORD: analytics
         run: |
+          unaffected_before="$(psql -h localhost -U analytics -d hotel -Atc "select processed_at::text from analytics_dev.int_booking_current_state where booking_id='B002';")"
+          changed_before="$(psql -h localhost -U analytics -d hotel -Atc "select processed_at::text from analytics_dev.int_booking_current_state where booking_id='B001';")"
+
           python scripts/reliability_scenarios.py append-late-arrival
           python scripts/validate_source_contracts.py
           python scripts/load_raw.py --dataset bookings --start-date 2026-09-01 --end-date 2026-09-01 --run-id ci-late-arrival
@@ -150,8 +162,19 @@ jobs:
           cd ..
           python scripts/reliability_scenarios.py assert-late-arrival
 
-      - name: Prove historical correction can be safely backfilled
+          unaffected_after="$(psql -h localhost -U analytics -d hotel -Atc "select processed_at::text from analytics_dev.int_booking_current_state where booking_id='B002';")"
+          changed_after="$(psql -h localhost -U analytics -d hotel -Atc "select processed_at::text from analytics_dev.int_booking_current_state where booking_id='B001';")"
+          test "$unaffected_before" = "$unaffected_after"
+          test "$changed_before" != "$changed_after"
+
+      - name: Prove historical correction can be safely backfilled incrementally
+        shell: bash
+        env:
+          PGPASSWORD: analytics
         run: |
+          unchanged_before="$(psql -h localhost -U analytics -d hotel -Atc "select processed_at::text from analytics_dev.int_booking_current_state where booking_id='B002';")"
+          corrected_before="$(psql -h localhost -U analytics -d hotel -Atc "select processed_at::text from analytics_dev.int_booking_current_state where booking_id='B003';")"
+
           python scripts/reliability_scenarios.py append-historical-correction
           python scripts/validate_source_contracts.py
           python scripts/load_raw.py --dataset bookings --start-date 2026-09-01 --end-date 2026-09-01 --run-id ci-historical-correction
@@ -159,6 +182,29 @@ jobs:
           dbt build --profiles-dir . --target dev
           cd ..
           python scripts/reliability_scenarios.py assert-historical-correction
+
+          unchanged_after="$(psql -h localhost -U analytics -d hotel -Atc "select processed_at::text from analytics_dev.int_booking_current_state where booking_id='B002';")"
+          corrected_after="$(psql -h localhost -U analytics -d hotel -Atc "select processed_at::text from analytics_dev.int_booking_current_state where booking_id='B003';")"
+          test "$unchanged_before" = "$unchanged_after"
+          test "$corrected_before" != "$corrected_after"
+
+      - name: Prove incremental and full-refresh outputs are equivalent
+        shell: bash
+        env:
+          PGPASSWORD: analytics
+        run: |
+          fact_before="$(psql -h localhost -U analytics -d hotel -Atc "select md5(coalesce(string_agg(concat_ws('|', booking_id, hotel_id, guest_id, booking_date::text, check_in_date::text, check_out_date::text, booking_status, revenue::text, booking_lead_days::text), '||' order by booking_id), '')) from analytics_dev.fct_bookings;")"
+          mart_before="$(psql -h localhost -U analytics -d hotel -Atc "select md5(coalesce(string_agg(concat_ws('|', booking_date::text, hotel_id, total_bookings::text, cancelled_bookings::text, total_revenue::text), '||' order by booking_date, hotel_id), '')) from analytics_dev.mart_hotel_daily;")"
+
+          cd dbt_hotel
+          dbt build --full-refresh --profiles-dir . --target dev
+          cd ..
+
+          fact_after="$(psql -h localhost -U analytics -d hotel -Atc "select md5(coalesce(string_agg(concat_ws('|', booking_id, hotel_id, guest_id, booking_date::text, check_in_date::text, check_out_date::text, booking_status, revenue::text, booking_lead_days::text), '||' order by booking_id), '')) from analytics_dev.fct_bookings;")"
+          mart_after="$(psql -h localhost -U analytics -d hotel -Atc "select md5(coalesce(string_agg(concat_ws('|', booking_date::text, hotel_id, total_bookings::text, cancelled_bookings::text, total_revenue::text), '||' order by booking_date, hotel_id), '')) from analytics_dev.mart_hotel_daily;")"
+
+          test "$fact_before" = "$fact_after"
+          test "$mart_before" = "$mart_after"
 
       - name: Prove downstream failure is visible and clean rerun recovers
         shell: bash

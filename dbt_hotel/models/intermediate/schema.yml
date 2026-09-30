@@ -1,0 +1,22 @@
+version: 2
+
+models:
+  - name: int_booking_current_state
+    description: Incremental current booking state keyed by booking_id, refreshed only for booking keys affected by new booking or payment ingestion.
+    columns:
+      - name: booking_id
+        data_tests:
+          - not_null
+          - unique
+      - name: is_trusted
+        data_tests:
+          - not_null
+      - name: booking_ingested_at
+        data_tests:
+          - not_null
+      - name: change_detected_at
+        data_tests:
+          - not_null
+      - name: processed_at
+        data_tests:
+          - not_null
