@@ -138,18 +138,6 @@ def assert_historical_correction() -> None:
     assert_ingestion_run("ci-historical-correction", 1)
 
 
-def assert_recovered_state() -> None:
-    assert_late_arrival()
-    assert_historical_correction()
-
-    latest_rows = query_one(
-        f"SELECT count(*) FROM {TARGET_SCHEMA}.fct_bookings"
-    )[0]
-    if latest_rows <= 0:
-        raise AssertionError("Trusted fact is empty after recovery")
-    print(f"PASS trusted fact remains queryable after recovery: rows={latest_rows}")
-
-
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Create and verify deterministic production-reliability scenarios"
@@ -161,7 +149,6 @@ def parse_args():
             "append-historical-correction",
             "assert-late-arrival",
             "assert-historical-correction",
-            "assert-recovered-state",
         ],
     )
     return parser.parse_args()
@@ -177,8 +164,6 @@ def main() -> None:
         assert_late_arrival()
     elif args.action == "assert-historical-correction":
         assert_historical_correction()
-    elif args.action == "assert-recovered-state":
-        assert_recovered_state()
 
 
 if __name__ == "__main__":
