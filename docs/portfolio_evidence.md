@@ -15,7 +15,7 @@ Built a containerized hotel analytics pipeline using PostgreSQL, dbt, Apache Air
 - Added mapping, completeness, and validity data-quality rules with blocking trusted-data gates and structured exception outputs.
 - Added append-only exception lifecycle actions (`ACKNOWLEDGED`, `RESOLVED`, `REPROCESSED`) and a lifecycle-aware exception register without mutating dbt-generated exception tables.
 - Developed DQ and operational health signals for pass rate, mapping coverage, freshness, volume change, failed ingestion runs, and exception counts by date, source, rule, and lifecycle status.
-- Automated reliability scenarios for duplicate delivery, breaking source contracts, late-arriving updates, historical correction, and downstream dbt failure/recovery.
+- Automated reliability scenarios for duplicate delivery, breaking source contracts, late-arriving updates, historical correction, changed-key incremental processing, and incremental/full-refresh parity.
 - Documented source-to-target mappings, runbook procedures, incident examples, data contracts, reliability scenarios, and architecture decisions.
 - Built Power BI-ready operational and data-quality marts without claiming a Power BI Service deployment or `.pbix` artifact.
 
@@ -28,6 +28,8 @@ Built a containerized hotel analytics pipeline using PostgreSQL, dbt, Apache Air
 | Executable source contracts | `config/data_contracts.json`, `scripts/validate_source_contracts.py` |
 | Operational health gate | `scripts/check_operational_health.py` |
 | Reliability scenarios | `scripts/reliability_scenarios.py`, `docs/RELIABILITY_SCENARIOS.md` |
+| Changed-key incremental processing | `dbt_hotel/macros/incremental_processing.sql`, `dbt_hotel/models/intermediate/int_booking_current_state.sql` |
+| Incremental mart refresh | `dbt_hotel/models/marts/mart_hotel_daily.sql` |
 | Master data | `dbt_hotel/models/master/dim_hotel_master.sql` |
 | Source-system reference data | `dbt_hotel/models/reference/dim_source_system_reference.sql` |
 | Source-to-canonical mapping | `dbt_hotel/models/master/map_hotel_source_to_canonical.sql` |

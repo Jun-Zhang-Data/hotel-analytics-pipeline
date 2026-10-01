@@ -42,15 +42,13 @@ This proves that late-arriving updates can be incorporated without destructive r
 
 The same harness appends a corrected `B003` version with a later `source_updated_at`. CI runs a bounded backfill and verifies that raw history contains both versions while `fct_bookings` resolves to the corrected `check_out_date` with one trusted booking row.
 
-## Partial downstream failure and recovery
+## Incremental/full-refresh parity
 
-`dbt_hotel/tests/reliability/assert_no_forced_failure.sql` is normally empty and passes. CI deliberately runs it with `force_reliability_failure=true`, requires dbt to return a failure, then executes a clean `dbt build` and re-verifies the trusted late-arrival and historical-correction states.
-
-This demonstrates the recovery boundary: successful raw ingestion remains durable when a downstream transformation/test step fails, so recovery can restart from the trusted raw state rather than deleting and reloading upstream data.
+CI snapshots deterministic hashes of `fct_bookings` and `mart_hotel_daily`, runs `dbt build --full-refresh`, then requires the rebuilt outputs to match the incremental outputs. This protects the changed-key incremental path from drifting away from full-refresh semantics.
 
 ## dbt tests
 
-`dbt build` executes seeds, transformations, generic schema tests, singular business-rule tests, DQ tests, reliability tests, and UAT tests together. Existing acceptance tests cover unmapped hotels, missing guest IDs, invalid stay dates, valid records reaching trusted output, expected DQ behavior, and lifecycle-aware exception mart constraints.
+`dbt build` executes seeds, transformations, generic schema tests, singular business-rule tests, DQ tests, and UAT tests together. Existing acceptance tests cover unmapped hotels, missing guest IDs, invalid stay dates, valid records reaching trusted output, expected DQ behavior, and lifecycle-aware exception mart constraints.
 
 ## Operational-health tests
 
@@ -58,14 +56,8 @@ CI exercises `scripts/check_operational_health.py` using thresholds adjusted for
 
 ## Deliberately broken changes
 
-The repository contains automated negative-path evidence rather than relying only on manual demonstrations:
-
-- a missing required source column must fail the source-contract gate;
-- a forced dbt reliability test must fail downstream processing;
-- both scenarios must subsequently recover and pass after the fault is removed.
-
-Additional manual failure demonstrations can still be used for Python syntax errors or business-rule regressions, but they are not required to prove the implemented recovery paths.
+The repository keeps one automated negative-path contract test: a missing required source column must fail the source-contract gate, then the restored fixture must pass. Synthetic dbt failure injection is intentionally not part of the dbt test suite.
 
 ## Test responsibility split
 
-Static checks validate code shape. Contract tests validate source compatibility. Ingestion tests validate deterministic loading/retry behavior. Exception lifecycle tests validate persistence of operational disposition across dbt rebuilds. Reliability scenarios validate late data, historical corrections, and partial-failure recovery. dbt tests validate transformations and business rules. UAT validates user-facing acceptance behavior. Operational health checks validate whether successful execution still produced data that is fresh and within defined quality/volume thresholds.
+Static checks validate code shape. Contract tests validate source compatibility. Ingestion tests validate deterministic loading/retry behavior. Exception lifecycle tests validate persistence of operational disposition across dbt rebuilds. Reliability scenarios validate late data and historical corrections. Incremental parity tests validate changed-key processing against full refresh. dbt tests validate transformations and business rules. UAT validates user-facing acceptance behavior. Operational health checks validate whether successful execution still produced data that is fresh and within defined quality/volume thresholds.

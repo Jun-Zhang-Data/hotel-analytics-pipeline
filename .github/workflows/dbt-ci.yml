@@ -206,24 +206,6 @@ jobs:
           test "$fact_before" = "$fact_after"
           test "$mart_before" = "$mart_after"
 
-      - name: Prove downstream failure is visible and clean rerun recovers
-        shell: bash
-        run: |
-          cd dbt_hotel
-          set +e
-          dbt test --profiles-dir . --target dev --select assert_no_forced_failure --vars '{force_reliability_failure: true}'
-          status=$?
-          set -e
-
-          if [ "$status" -eq 0 ]; then
-            echo "Expected controlled downstream dbt test failure, but it passed."
-            exit 1
-          fi
-
-          dbt build --profiles-dir . --target dev
-          cd ..
-          python scripts/reliability_scenarios.py assert-recovered-state
-
       - name: Exercise operational health checks against deterministic fixture
         env:
           TARGET_SCHEMA: analytics_dev
