@@ -23,9 +23,12 @@ def get_connection():
 
 def run_semantic_query(
     query: dict[str, Any],
+    catalog: dict[str, Any] | None = None,
     catalog_path=None,
 ) -> dict[str, Any]:
-    catalog = load_catalog(catalog_path) if catalog_path else load_catalog()
+    if catalog is None:
+        catalog = load_catalog(catalog_path) if catalog_path else load_catalog()
+
     sql, params = generate_sql(query, catalog)
 
     with get_connection() as connection:
