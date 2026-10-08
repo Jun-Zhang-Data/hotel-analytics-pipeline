@@ -114,14 +114,22 @@ The deterministic rule parser remains available for reproducible local tests. An
 
 The LLM is not allowed to write or execute SQL. Its output is parsed as JSON and then passed through the same deterministic semantic validator before SQL generation.
 
-Set the API key and model only in your local environment. Do not commit credentials.
+Store local API settings in a repository-root `.env` file. The semantic package loads it automatically and does not override environment variables that are already set by the shell or deployment platform.
 
-PowerShell:
+Create the local file from the safe template:
 
 ```powershell
-$env:OPENAI_API_KEY="your-key"
-$env:OPENAI_SEMANTIC_MODEL="your-api-model"
+Copy-Item .env.example .env
 ```
+
+Then edit `.env` locally:
+
+```text
+OPENAI_API_KEY=your-real-key
+OPENAI_SEMANTIC_MODEL=your-api-model
+```
+
+The repository already ignores `.env`, so the real key is not committed. Never put a real key in `.env.example`.
 
 Install dependencies:
 
@@ -289,6 +297,8 @@ Start the API:
 ```powershell
 python -m uvicorn semantic_api.app:app --host 127.0.0.1 --port 8000
 ```
+
+Restart Uvicorn after editing `.env`, because the process reads the local environment when the semantic package starts.
 
 Then open this address in a browser:
 
