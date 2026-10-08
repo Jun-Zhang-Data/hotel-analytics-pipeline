@@ -8,15 +8,17 @@ Stakeholders should not need to know warehouse table names or SQL expressions. T
 
 The current MVP intentionally does **not** let an LLM generate unrestricted SQL. Natural-language parsing can be added later as a thin layer that produces the same validated semantic-query JSON.
 
-## Current domain
+## Current domains
 
-`hotel_operations`
+- `hotel_operations`
+- `data_quality`
 
-Source relation:
+Default DEV source relations:
 
-`analytics_dev.mart_power_bi_hotel_daily`
+- `analytics_dev_ops.mart_power_bi_hotel_daily`
+- `analytics_dev_dq.mart_power_bi_dq_rule_daily`
 
-The schema can be overridden with the `TARGET_SCHEMA` environment variable.
+The domain schemas can be overridden with `HOTEL_OPS_SCHEMA` and `DATA_QUALITY_SCHEMA`.
 
 ## Governed metrics
 
@@ -189,3 +191,17 @@ stakeholder question
 ```
 
 The routing layer does not grant access to arbitrary warehouse objects. Each domain can only query the source relation, metrics, dimensions, filters, and row limits declared in its own semantic catalog.
+
+
+## Physical domain schemas
+
+The reporting marts consumed by the semantic layer are physically separated by stakeholder domain.
+
+In DEV:
+
+```text
+analytics_dev_ops.mart_power_bi_hotel_daily
+analytics_dev_dq.mart_power_bi_dq_rule_daily
+```
+
+The shared core models still live in the base analytics schema and remain reusable. Only the reporting marts intended for a stakeholder domain are exposed through that domain's semantic catalog. This gives the project both logical governance through the catalog and physical separation through PostgreSQL schemas.
