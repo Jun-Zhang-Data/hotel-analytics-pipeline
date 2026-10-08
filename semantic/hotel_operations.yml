@@ -46,3 +46,36 @@ metrics:
   revenue_per_booking:
     expression: sum(total_revenue)::numeric / nullif(sum(total_bookings), 0)
     description: Total revenue divided by total bookings.
+
+natural_language:
+  metric_aliases:
+    cancellation_rate:
+      - cancellation rate
+      - cancel rate
+    revenue_per_booking:
+      - revenue per booking
+      - average revenue per booking
+    cancelled_bookings:
+      - cancelled bookings
+      - canceled bookings
+      - cancellations
+    active_bookings:
+      - active bookings
+      - non-cancelled bookings
+      - non-canceled bookings
+    total_bookings:
+      - total bookings
+      - bookings
+    total_revenue:
+      - total revenue
+      - revenue
+  dimension_aliases:
+    hotel:
+      - hotel
+      - hotels
+    city:
+      - city
+      - cities
+    booking_date:
+      - booking date
+      - date
