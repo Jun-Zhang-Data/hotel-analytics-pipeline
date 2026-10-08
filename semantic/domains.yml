@@ -1,0 +1,30 @@
+version: 1
+
+domains:
+  hotel_operations:
+    catalog: hotel_operations.yml
+    description: Booking, cancellation, revenue, hotel and city performance analytics.
+    aliases:
+      - booking
+      - bookings
+      - revenue
+      - hotel
+      - hotels
+      - cancellation
+      - cancellations
+      - city
+      - cities
+
+  data_quality:
+    catalog: data_quality.yml
+    description: Data-quality rules, failed records, pass rates, mapping coverage and source-system quality analytics.
+    aliases:
+      - data quality
+      - quality
+      - dq
+      - failed records
+      - pass rate
+      - mapping coverage
+      - quality rule
+      - source system
+      - validation
