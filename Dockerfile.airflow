@@ -7,4 +7,5 @@ RUN pip install --no-cache-dir \
     pandas==2.2.3 \
     SQLAlchemy==1.4.54 \
     psycopg2-binary==2.9.10 \
-    PyYAML==6.0.2
+    PyYAML==6.0.2 \
+    openai==3.26.1
