@@ -146,3 +146,46 @@ python -m scripts.chat_semantic
 ```
 
 Questions that cannot be mapped safely should request clarification instead of producing unrestricted SQL.
+
+
+## Multi-domain routing
+
+The semantic layer now supports multiple governed domains through `semantic/domains.yml`.
+
+Current domains:
+
+- `hotel_operations` -> `semantic/hotel_operations.yml`
+- `data_quality` -> `semantic/data_quality.yml`
+
+A question can either specify a domain explicitly or use automatic routing.
+
+Examples:
+
+```powershell
+python -m scripts.query_natural_language --domain hotel_operations --parser llm --question "Which hotel generated the most revenue in September 2026?"
+```
+
+```powershell
+python -m scripts.query_natural_language --domain data_quality --parser llm --question "Which source system had the lowest data quality pass rate in September 2026?"
+```
+
+Automatic routing:
+
+```powershell
+python -m scripts.query_natural_language --domain auto --parser llm --question "Which source system had the lowest data quality pass rate in September 2026?"
+```
+
+The flow is:
+
+```text
+stakeholder question
+-> governed domain router
+-> domain-specific semantic catalog
+-> semantic query parser
+-> deterministic validator
+-> deterministic SQL generator
+-> domain mart
+-> formatted answer
+```
+
+The routing layer does not grant access to arbitrary warehouse objects. Each domain can only query the source relation, metrics, dimensions, filters, and row limits declared in its own semantic catalog.
