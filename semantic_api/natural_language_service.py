@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from time import perf_counter
 from typing import Any, Literal
+from uuid import uuid4
 
+from semantic_api.audit import record_query_run
 from semantic_api.catalog import (
     available_domains,
     load_catalog_for_domain,
@@ -59,27 +62,71 @@ def run_natural_language_query(
     parser: ParserMode = "llm",
     execute: bool = True,
 ) -> dict[str, Any]:
-    registry = load_domain_registry()
-    selected_domain = resolve_domain(
-        question,
-        domain=domain,
-        parser=parser,
-        registry=registry,
-    )
-    catalog = load_catalog_for_domain(selected_domain, registry)
-    semantic_query = build_semantic_query(
-        question,
-        catalog,
-        parser=parser,
-    )
+    query_run_id = str(uuid4())
+    started = perf_counter()
+    selected_domain: str | None = None
+    catalog: dict[str, Any] | None = None
+    semantic_query: dict[str, Any] | None = None
+    execution_mode = "EXECUTE" if execute else "DRY_RUN"
 
-    if not execute:
-        sql_text, params = generate_sql(semantic_query, catalog)
-        return {
-            "domain": selected_domain,
-            "query": semantic_query,
-            "sql": sql_text,
-            "params": params,
-        }
+    try:
+        registry = load_domain_registry()
+        selected_domain = resolve_domain(
+            question,
+            domain=domain,
+            parser=parser,
+            registry=registry,
+        )
+        catalog = load_catalog_for_domain(selected_domain, registry)
+        semantic_query = build_semantic_query(
+            question,
+            catalog,
+            parser=parser,
+        )
 
-    return run_semantic_query(semantic_query, catalog=catalog)
+        if not execute:
+            sql_text, params = generate_sql(semantic_query, catalog)
+            result = {
+                "query_run_id": query_run_id,
+                "domain": selected_domain,
+                "query": semantic_query,
+                "sql": sql_text,
+                "params": params,
+            }
+        else:
+            result = run_semantic_query(semantic_query, catalog=catalog)
+            result["query_run_id"] = query_run_id
+
+        duration_ms = int((perf_counter() - started) * 1000)
+        record_query_run(
+            query_run_id=query_run_id,
+            question=question,
+            parser=parser,
+            requested_domain=domain,
+            selected_domain=selected_domain,
+            metric=semantic_query.get("metric"),
+            access_role=catalog.get("access_role"),
+            execution_mode=execution_mode,
+            status="SUCCESS",
+            row_count=len(result.get("rows", [])) if execute else None,
+            duration_ms=duration_ms,
+        )
+        return result
+    except Exception as exc:
+        duration_ms = int((perf_counter() - started) * 1000)
+        record_query_run(
+            query_run_id=query_run_id,
+            question=question,
+            parser=parser,
+            requested_domain=domain,
+            selected_domain=selected_domain,
+            metric=semantic_query.get("metric") if semantic_query else None,
+            access_role=catalog.get("access_role") if catalog else None,
+            execution_mode=execution_mode,
+            status="FAILED",
+            row_count=None,
+            duration_ms=duration_ms,
+            error_type=type(exc).__name__,
+            error_message=str(exc),
+        )
+        raise
