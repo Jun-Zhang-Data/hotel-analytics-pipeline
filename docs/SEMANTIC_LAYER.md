@@ -278,3 +278,24 @@ Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8000/query" -ContentType "
 By default the API returns only the selected domain and stakeholder-friendly answer. Internal SQL, rows, semantic JSON and database role are returned only when `include_details=true`.
 
 This API is a local MVP and does not add end-user authentication, TLS termination or internet-facing deployment configuration.
+
+
+## Browser UI
+
+The FastAPI service now includes a lightweight local stakeholder interface.
+
+Start the API:
+
+```powershell
+python -m uvicorn semantic_api.app:app --host 127.0.0.1 --port 8000
+```
+
+Then open this address in a browser:
+
+```text
+http://127.0.0.1:8000/
+```
+
+The page lets a stakeholder choose automatic or explicit domain routing, choose the LLM or deterministic parser, ask a natural-language question, and optionally inspect governed query details.
+
+The browser does not accept SQL from the user. It calls the same `/query` endpoint and therefore keeps the same semantic validation and domain-role enforcement as the CLI and HTTP API.
