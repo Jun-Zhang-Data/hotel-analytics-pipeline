@@ -12,6 +12,9 @@ from semantic_api.catalog import load_catalog
 from semantic_api.sql_generator import generate_sql
 
 
+DEFAULT_STATEMENT_TIMEOUT_MS = 5000
+
+
 def get_connection():
     return psycopg2.connect(
         host=os.getenv("DB_HOST", "localhost"),
@@ -19,6 +22,34 @@ def get_connection():
         dbname=os.getenv("DB_NAME", "hotel"),
         user=os.getenv("DB_USER", "analytics"),
         password=os.getenv("DB_PASSWORD", "analytics"),
+    )
+
+
+def _statement_timeout_ms() -> int:
+    raw_value = os.getenv(
+        "SEMANTIC_STATEMENT_TIMEOUT_MS",
+        str(DEFAULT_STATEMENT_TIMEOUT_MS),
+    )
+    try:
+        timeout_ms = int(raw_value)
+    except ValueError as exc:
+        raise ValueError(
+            "SEMANTIC_STATEMENT_TIMEOUT_MS must be an integer."
+        ) from exc
+
+    if timeout_ms <= 0:
+        raise ValueError(
+            "SEMANTIC_STATEMENT_TIMEOUT_MS must be greater than zero."
+        )
+
+    return timeout_ms
+
+
+def _configure_query_session(connection, cursor) -> None:
+    connection.set_session(readonly=True)
+    cursor.execute(
+        "select set_config('statement_timeout', %s, true)",
+        (str(_statement_timeout_ms()),),
     )
 
 
@@ -44,6 +75,7 @@ def run_semantic_query(
 
     with get_connection() as connection:
         with connection.cursor(cursor_factory=RealDictCursor) as cursor:
+            _configure_query_session(connection, cursor)
             _set_domain_role(cursor, catalog)
             cursor.execute(sql_text, params)
             rows = [dict(row) for row in cursor.fetchall()]
