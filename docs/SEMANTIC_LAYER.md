@@ -309,3 +309,24 @@ http://127.0.0.1:8000/
 The page lets a stakeholder choose automatic or explicit domain routing, choose the LLM or deterministic parser, ask a natural-language question, and optionally inspect governed query details.
 
 The browser does not accept SQL from the user. It calls the same `/query` endpoint and therefore keeps the same semantic validation and domain-role enforcement as the CLI and HTTP API.
+
+
+## Semantic query observability
+
+Executed and dry-run semantic requests now receive a unique `query_run_id` and are recorded in `ops.semantic_query_runs`.
+
+The audit record stores operational metadata such as parser mode, requested and selected domain, governed metric, database access role, execution status, row count and duration. It stores a SHA-256 fingerprint of the normalized stakeholder question rather than the raw question text.
+
+Initialize an existing local database after pulling this change:
+
+```powershell
+docker compose exec warehouse psql -U analytics -d hotel -f /docker-entrypoint-initdb.d/01_init.sql
+```
+
+Inspect recent semantic activity:
+
+```powershell
+docker compose exec warehouse psql -U analytics -d hotel -c "select query_run_id, selected_domain, metric, parser, status, row_count, duration_ms, completed_at from ops.semantic_query_runs order by completed_at desc limit 10;"
+```
+
+The HTTP API also returns `query_run_id` with each successful answer so a user-visible response can be correlated with the operational audit trail without exposing raw stakeholder questions.
