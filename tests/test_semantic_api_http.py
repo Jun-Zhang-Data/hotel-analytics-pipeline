@@ -3,11 +3,19 @@ from unittest.mock import patch
 
 from fastapi import HTTPException
 
-from semantic_api.app import QueryRequest, domains, health, query_endpoint
+from semantic_api.app import QueryRequest, domains, health, home, query_endpoint
 from semantic_api.domain_router import DomainRoutingError
 
 
 class SemanticApiTests(unittest.TestCase):
+    def test_home_serves_browser_ui(self):
+        response = home()
+        body = response.body.decode("utf-8")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Hotel Analytics Chat", body)
+        self.assertIn('fetch("/query"', body)
+
     def test_health(self):
         self.assertEqual(health(), {"status": "ok"})
 
