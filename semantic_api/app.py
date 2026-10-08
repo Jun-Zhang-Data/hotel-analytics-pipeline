@@ -83,6 +83,7 @@ def query_endpoint(request: QueryRequest) -> dict[str, object]:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     response: dict[str, object] = {
+        "query_run_id": result["query_run_id"],
         "domain": result["domain"],
         "answer": result["answer"],
     }
