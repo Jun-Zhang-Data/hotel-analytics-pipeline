@@ -330,3 +330,21 @@ docker compose exec warehouse psql -U analytics -d hotel -c "select query_run_id
 ```
 
 The HTTP API also returns `query_run_id` with each successful answer so a user-visible response can be correlated with the operational audit trail without exposing raw stakeholder questions.
+
+
+## Query execution safeguards
+
+Semantic database execution now applies two additional safeguards before the governed SQL runs:
+
+- the PostgreSQL transaction is marked read-only;
+- a local statement timeout is applied, defaulting to 5000 milliseconds.
+
+The timeout can be overridden locally in `.env`:
+
+```text
+SEMANTIC_STATEMENT_TIMEOUT_MS=5000
+```
+
+The value must be a positive integer. The timeout is transaction-local, so it applies to the semantic request without changing the global PostgreSQL configuration.
+
+These protections are in addition to the semantic validator, parameterized filter values, domain-specific schemas and PostgreSQL reader roles.
