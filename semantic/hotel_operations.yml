@@ -31,21 +31,27 @@ metrics:
   total_bookings:
     expression: sum(total_bookings)
     description: Total number of bookings.
+    format: number
   cancelled_bookings:
     expression: sum(cancelled_bookings)
     description: Total number of cancelled bookings.
+    format: number
   active_bookings:
     expression: sum(active_bookings)
     description: Total number of non-cancelled bookings.
+    format: number
   total_revenue:
     expression: sum(total_revenue)
     description: Total booking revenue.
+    format: number
   cancellation_rate:
     expression: sum(cancelled_bookings)::numeric / nullif(sum(total_bookings), 0)
     description: Cancelled bookings divided by total bookings.
+    format: percent
   revenue_per_booking:
     expression: sum(total_revenue)::numeric / nullif(sum(total_bookings), 0)
     description: Total revenue divided by total bookings.
+    format: number
 
 natural_language:
   metric_aliases:
