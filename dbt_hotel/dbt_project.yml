@@ -19,9 +19,3 @@ models:
       +materialized: table
     marts:
       +materialized: table
-    domains:
-      +materialized: view
-      operations:
-        +schema: ops
-      data_quality:
-        +schema: dq
