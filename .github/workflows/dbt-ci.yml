@@ -122,6 +122,13 @@ jobs:
         working-directory: dbt_hotel
         run: dbt build --profiles-dir . --target dev
 
+      - name: Assert semantic domain schemas are built
+        env:
+          PGPASSWORD: analytics
+        run: |
+          test "$(psql -h localhost -U analytics -d hotel -Atc "select to_regclass('analytics_dev_ops.mart_power_bi_hotel_daily') is not null;")" = "t"
+          test "$(psql -h localhost -U analytics -d hotel -Atc "select to_regclass('analytics_dev_dq.mart_power_bi_dq_rule_daily') is not null;")" = "t"
+
       - name: Assert incremental watermarks initialized
         env:
           PGPASSWORD: analytics
