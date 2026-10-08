@@ -6,7 +6,7 @@ The semantic layer provides a governed business interface over trusted reporting
 
 Stakeholders should not need to know warehouse table names or SQL expressions. The semantic catalog defines approved business metrics and dimensions, and application code converts a structured semantic query into parameterized SQL.
 
-The current MVP intentionally does **not** let an LLM generate unrestricted SQL. Natural-language parsing can be added later as a thin layer that produces the same validated semantic-query JSON.
+The current MVP intentionally does **not** let an LLM generate unrestricted SQL. Natural-language parsing is implemented through both a deterministic rules parser and an optional LLM parser; both produce the same validated semantic-query JSON before deterministic SQL generation.
 
 ## Current domains
 
@@ -84,11 +84,11 @@ python scripts/query_semantic.py \
 
 Database connection settings use the existing `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD` environment variables.
 
-## Natural-language extension
+## Natural-language parsing
 
-The next layer can convert a stakeholder question such as:
+The implemented natural-language layer can convert a stakeholder question such as:
 
-> Which hotel generated the most revenue in September?
+> Which hotel generated the most revenue in September 2026?
 
 into the governed JSON contract:
 
@@ -105,7 +105,7 @@ into the governed JSON contract:
 }
 ```
 
-The LLM should only produce the semantic query. Validation and SQL generation remain deterministic application responsibilities.
+The LLM only produces the semantic query. Validation and SQL generation remain deterministic application responsibilities.
 
 
 ## Optional LLM parser

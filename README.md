@@ -251,7 +251,7 @@ GitHub Actions validates pull requests and pushes to `master` by:
 
 - starting PostgreSQL 16
 - linting and compiling Python
-- initializing warehouse, raw, analytics, and operational schemas
+- initializing warehouse, raw, analytics, operational, and semantic-audit structures
 - generating deterministic booking and payment sample data
 - validating executable source contracts
 - deliberately breaking a required source column and proving the contract gate blocks it
@@ -259,12 +259,16 @@ GitHub Actions validates pull requests and pushes to `master` by:
 - loading operational raw data
 - loading the same data again and asserting zero duplicate inserts
 - running `dbt debug`
+- running semantic-layer Python unit tests
 - running `dbt build`, including seeds and all dbt tests
 - appending a late-arriving booking update, bounded-reprocessing it, and verifying latest-version trusted behavior
 - appending a historical correction, bounded-reprocessing it, and verifying corrected trusted state without duplicate business rows
 - asserting semantic domain marts are created in separate schemas
 - configuring semantic reader roles and proving cross-domain access is blocked
 - executing a governed semantic query and proving audit metadata is recorded
+- asserting incremental model watermarks are initialized
+- proving DQ exception lifecycle actions persist across a rebuild
+- proving incremental and full-refresh business outputs are equivalent
 - executing operational-health checks against deterministic thresholds
 
 This provides executable evidence for safe change management and recovery behavior before changes are merged.
@@ -306,7 +310,7 @@ Key documentation:
 
 ## Tech stack
 
-Python · SQL · PostgreSQL · dbt · Apache Airflow · Docker · Docker Compose · FastAPI · Git · GitHub · GitHub Actions
+Python · SQL · PostgreSQL · dbt · Apache Airflow · Docker · Docker Compose · FastAPI · OpenAI API (optional semantic parser) · Git · GitHub · GitHub Actions
 
 ## Scope boundaries
 
@@ -348,6 +352,8 @@ Not implemented:
 - enterprise MDM tooling
 - centralized enterprise monitoring/alert delivery
 - production secrets management
+- end-user authentication / authorization for the semantic HTTP application
+- public internet deployment, TLS termination, or managed API gateway
 - full exception case-management workflow with human remediation UI
 
 ## Start locally
@@ -386,6 +392,40 @@ Build DEV models and load governed dbt seeds:
 docker compose exec airflow-webserver bash -lc "cd /opt/project/dbt_hotel && dbt build --target dev --profiles-dir ."
 ```
 
+Configure semantic database roles after the DEV marts are built:
+
+```powershell
+python scripts/configure_semantic_access.py
+```
+
+Install the lightweight semantic application dependencies:
+
+```powershell
+pip install -r requirements-semantic.txt
+```
+
+Create a local semantic settings file from the safe template:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Set `OPENAI_API_KEY` and `OPENAI_SEMANTIC_MODEL` in `.env` only when using the optional LLM parser. The deterministic `rules` parser does not require an OpenAI API key.
+
+Run a governed rules-based dry run:
+
+```powershell
+python -m scripts.query_natural_language --domain auto --parser rules --question "Which hotel generated the most revenue in September 2026?" --dry-run
+```
+
+Start the local semantic API and browser UI:
+
+```powershell
+python -m uvicorn semantic_api.app:app --host 127.0.0.1 --port 8000
+```
+
+Then open `http://127.0.0.1:8000/`.
+
 Run operational health checks:
 
 ```bash
@@ -401,7 +441,7 @@ docker compose exec warehouse psql -U analytics -d hotel -c "select * from ops.i
 Inspect DQ reporting:
 
 ```bash
-docker compose exec warehouse psql -U analytics -d hotel -c "select * from analytics_dev.mart_power_bi_dq_rule_daily order by check_date, source_system_code, rule_id;"
+docker compose exec warehouse psql -U analytics -d hotel -c "select * from analytics_dev_dq.mart_power_bi_dq_rule_daily order by check_date, source_system_code, rule_id;"
 ```
 
 ## Airflow UI
