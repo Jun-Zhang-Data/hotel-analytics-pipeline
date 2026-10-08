@@ -2,6 +2,7 @@ import argparse
 import json
 
 from semantic_api.catalog import load_catalog
+from semantic_api.llm_parser import parse_question_with_llm
 from semantic_api.nl_parser import parse_question
 from semantic_api.query_service import run_semantic_query
 from semantic_api.sql_generator import generate_sql
@@ -12,6 +13,12 @@ def parse_args():
         description="Translate a stakeholder question into a governed semantic query"
     )
     parser.add_argument("--question", required=True, help="Natural-language question")
+    parser.add_argument(
+        "--parser",
+        choices=["rules", "llm"],
+        default="rules",
+        help="Use deterministic rules or an LLM to map language into the semantic contract",
+    )
     parser.add_argument(
         "--dry-run",
         action="store_true",
@@ -28,7 +35,11 @@ def parse_args():
 def main():
     args = parse_args()
     catalog = load_catalog()
-    semantic_query = parse_question(args.question, catalog)
+
+    if args.parser == "llm":
+        semantic_query = parse_question_with_llm(args.question, catalog)
+    else:
+        semantic_query = parse_question(args.question, catalog)
 
     if args.dry_run:
         sql, params = generate_sql(semantic_query, catalog)
