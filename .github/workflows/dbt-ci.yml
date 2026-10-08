@@ -129,6 +129,27 @@ jobs:
           test "$(psql -h localhost -U analytics -d hotel -Atc "select to_regclass('analytics_dev_ops.mart_power_bi_hotel_daily') is not null;")" = "t"
           test "$(psql -h localhost -U analytics -d hotel -Atc "select to_regclass('analytics_dev_dq.mart_power_bi_dq_rule_daily') is not null;")" = "t"
 
+      - name: Configure semantic least-privilege roles
+        run: python scripts/configure_semantic_access.py
+
+      - name: Prove semantic roles cannot cross domains
+        shell: bash
+        env:
+          PGPASSWORD: analytics
+        run: |
+          psql -v ON_ERROR_STOP=1 -h localhost -U analytics -d hotel -c "set role hotel_ops_reader; select count(*) from analytics_dev_ops.mart_power_bi_hotel_daily;"
+          psql -v ON_ERROR_STOP=1 -h localhost -U analytics -d hotel -c "set role data_quality_reader; select count(*) from analytics_dev_dq.mart_power_bi_dq_rule_daily;"
+
+          if psql -v ON_ERROR_STOP=1 -h localhost -U analytics -d hotel -c "set role hotel_ops_reader; select count(*) from analytics_dev_dq.mart_power_bi_dq_rule_daily;"; then
+            echo "hotel_ops_reader unexpectedly accessed the data-quality domain."
+            exit 1
+          fi
+
+          if psql -v ON_ERROR_STOP=1 -h localhost -U analytics -d hotel -c "set role data_quality_reader; select count(*) from analytics_dev_ops.mart_power_bi_hotel_daily;"; then
+            echo "data_quality_reader unexpectedly accessed the hotel-operations domain."
+            exit 1
+          fi
+
       - name: Assert incremental watermarks initialized
         env:
           PGPASSWORD: analytics
