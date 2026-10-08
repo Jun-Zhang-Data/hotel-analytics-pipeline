@@ -1,16 +1,8 @@
 import argparse
 import json
 
-from semantic_api.catalog import (
-    available_domains,
-    load_catalog_for_domain,
-    load_domain_registry,
-)
-from semantic_api.domain_router import route_domain, route_domain_with_llm
-from semantic_api.llm_parser import parse_question_with_llm
-from semantic_api.nl_parser import parse_question
-from semantic_api.query_service import run_semantic_query
-from semantic_api.sql_generator import generate_sql
+from semantic_api.catalog import available_domains, load_domain_registry
+from semantic_api.natural_language_service import run_natural_language_query
 
 
 def parse_args():
@@ -46,34 +38,22 @@ def parse_args():
 
 def main():
     args = parse_args()
-    registry = load_domain_registry()
-
-    if args.domain == "auto":
-        if args.parser == "llm":
-            domain = route_domain_with_llm(args.question, registry)
-        else:
-            domain = route_domain(args.question, registry)
-    else:
-        domain = args.domain
-
-    catalog = load_catalog_for_domain(domain, registry)
-
-    if args.parser == "llm":
-        semantic_query = parse_question_with_llm(args.question, catalog)
-    else:
-        semantic_query = parse_question(args.question, catalog)
+    result = run_natural_language_query(
+        args.question,
+        domain=args.domain,
+        parser=args.parser,
+        execute=not args.dry_run,
+    )
 
     if args.dry_run:
-        sql, params = generate_sql(semantic_query, catalog)
-        print(f"domain={domain}")
+        print(f"domain={result['domain']}")
         print("semantic_query=")
-        print(json.dumps(semantic_query, indent=2))
+        print(json.dumps(result["query"], indent=2))
         print("sql=")
-        print(sql)
-        print(f"params={params}")
+        print(result["sql"])
+        print(f"params={result['params']}")
         return
 
-    result = run_semantic_query(semantic_query, catalog=catalog)
     print(result["answer"])
 
     if args.show_details:
