@@ -83,3 +83,34 @@ CREATE TABLE IF NOT EXISTS ops.dq_exception_actions (
 
 CREATE INDEX IF NOT EXISTS idx_dq_exception_actions_exception_time
     ON ops.dq_exception_actions (exception_id, action_at DESC);
+
+
+CREATE TABLE IF NOT EXISTS ops.semantic_query_runs (
+    query_run_id UUID PRIMARY KEY,
+    question_fingerprint TEXT NOT NULL,
+    parser TEXT NOT NULL,
+    requested_domain TEXT NOT NULL,
+    selected_domain TEXT,
+    metric TEXT,
+    access_role TEXT,
+    execution_mode TEXT NOT NULL,
+    status TEXT NOT NULL,
+    row_count INTEGER,
+    duration_ms INTEGER NOT NULL,
+    error_type TEXT,
+    error_message TEXT,
+    started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP,
+    CONSTRAINT semantic_query_runs_parser_chk
+        CHECK (parser IN ('rules', 'llm')),
+    CONSTRAINT semantic_query_runs_mode_chk
+        CHECK (execution_mode IN ('EXECUTE', 'DRY_RUN')),
+    CONSTRAINT semantic_query_runs_status_chk
+        CHECK (status IN ('SUCCESS', 'FAILED'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_semantic_query_runs_completed
+    ON ops.semantic_query_runs (completed_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_semantic_query_runs_domain_status
+    ON ops.semantic_query_runs (selected_domain, status, completed_at DESC);
