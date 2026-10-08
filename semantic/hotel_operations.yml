@@ -4,8 +4,8 @@ description: Governed business metrics and dimensions for hotel operations analy
 
 source:
   relation: mart_power_bi_hotel_daily
-  schema_env: TARGET_SCHEMA
-  default_schema: analytics_dev
+  schema_env: HOTEL_OPS_SCHEMA
+  default_schema: analytics_dev_ops
 
 time_dimension: booking_date
 
