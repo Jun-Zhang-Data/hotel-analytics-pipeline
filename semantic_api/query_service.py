@@ -6,6 +6,7 @@ from typing import Any
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+from semantic_api.answer_formatter import format_answer
 from semantic_api.catalog import load_catalog
 from semantic_api.sql_generator import generate_sql
 
@@ -37,4 +38,5 @@ def run_semantic_query(
         "query": query,
         "sql": sql,
         "rows": rows,
+        "answer": format_answer(query, rows, catalog),
     }
