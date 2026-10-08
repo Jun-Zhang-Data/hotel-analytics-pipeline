@@ -118,7 +118,11 @@ def parse_question_with_llm(
             ) from exc
         client = OpenAI()
 
-    selected_model = model or os.getenv("OPENAI_SEMANTIC_MODEL", "gpt-6-luna")
+    selected_model = model or os.getenv("OPENAI_SEMANTIC_MODEL")
+    if not selected_model:
+        raise LLMParserError(
+            "OPENAI_SEMANTIC_MODEL is not set. Configure the model explicitly."
+        )
     response = client.responses.create(
         model=selected_model,
         input=build_llm_prompt(question, catalog),
