@@ -1,6 +1,7 @@
 version: 1
 domain: data_quality
 description: Governed metrics and dimensions for data-quality stakeholders.
+access_role: data_quality_reader
 
 source:
   relation: mart_power_bi_dq_rule_daily
