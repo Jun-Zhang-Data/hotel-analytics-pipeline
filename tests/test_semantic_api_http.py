@@ -31,6 +31,7 @@ class SemanticApiTests(unittest.TestCase):
     @patch("semantic_api.app.run_natural_language_query")
     def test_query_hides_internal_details_by_default(self, run_query):
         run_query.return_value = {
+            "query_run_id": "11111111-1111-1111-1111-111111111111",
             "domain": "hotel_operations",
             "answer": "Stockholm Central: Total Revenue was 1,250.",
             "access_role": "hotel_ops_reader",
@@ -48,6 +49,10 @@ class SemanticApiTests(unittest.TestCase):
         )
 
         self.assertEqual(response["domain"], "hotel_operations")
+        self.assertEqual(
+            response["query_run_id"],
+            "11111111-1111-1111-1111-111111111111",
+        )
         self.assertIn("answer", response)
         self.assertNotIn("sql", response)
         self.assertNotIn("rows", response)
@@ -55,6 +60,7 @@ class SemanticApiTests(unittest.TestCase):
     @patch("semantic_api.app.run_natural_language_query")
     def test_query_can_return_details_explicitly(self, run_query):
         run_query.return_value = {
+            "query_run_id": "22222222-2222-2222-2222-222222222222",
             "domain": "data_quality",
             "answer": "PMS_A: Pass Rate was 95.00%.",
             "access_role": "data_quality_reader",
