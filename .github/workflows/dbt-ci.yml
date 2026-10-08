@@ -45,7 +45,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pandas==2.2.3 psycopg2-binary==2.9.10 dbt-postgres==1.9.0 PyYAML==6.0.2 openai==3.26.1 ruff==0.13.2
+          pip install pandas==2.2.3 psycopg2-binary==2.9.10 dbt-postgres==1.9.0 PyYAML==6.0.2 openai==3.26.1 fastapi==0.142.4 uvicorn==0.54.0 ruff==0.13.2
 
       - name: Lint Python
         run: ruff check scripts semantic_api tests airflow/dags
