@@ -54,7 +54,7 @@ jobs:
         run: python -m compileall -q scripts semantic_api tests airflow/dags
 
       - name: Test semantic layer
-        run: python -m unittest discover -s tests -p "test_semantic_layer.py"
+        run: python -m unittest discover -s tests -p "test_*.py"
 
       - name: Install PostgreSQL client
         run: |
