@@ -1,6 +1,6 @@
 # Hotel Analytics Pipeline 2.0
 
-A production-style local analytics engineering project for hotel booking data, built with PostgreSQL, dbt, Apache Airflow, Docker, Python, and GitHub Actions.
+A production-style local analytics engineering project for hotel booking data, built with PostgreSQL, dbt, Apache Airflow, Docker, Python, FastAPI, and GitHub Actions.
 
 The project demonstrates how operational booking and payment data can be ingested and standardized, enriched with governed master/reference data, validated through explicit data-quality rules, routed into structured exception outputs, transformed into trusted analytical models, and exposed through reporting-ready marts. The production-grade upgrade extends that baseline with explicit recovery, source contracts, operational health checks, controlled backfills, CI failure simulations, run metadata, and operational documentation.
 
@@ -20,10 +20,17 @@ The pipeline processes operational booking and payment data and enriches them wi
 - structured exception tables with severity and ownership metadata
 - data-quality KPI models
 - operational health checks for freshness, DQ pass rate, mapping coverage, volume change, and failed ingestions
-- automated reliability scenarios for duplicate delivery, breaking contracts, late arrivals, historical corrections, and downstream failure recovery
+- automated reliability scenarios for duplicate delivery, breaking contracts, late arrivals, and historical corrections
 - source-to-target mapping documentation
-- automated UAT acceptance tests
+- documented UAT acceptance scenarios backed by dbt and CI validation evidence
 - Power BI-ready operational and data-quality marts
+- governed semantic catalogs for hotel operations and data quality
+- deterministic and optional LLM natural-language parsing
+- deterministic semantic validation and SQL generation
+- domain-specific PostgreSQL schemas and reader roles
+- FastAPI and browser interfaces for governed natural-language analytics
+- semantic query audit logging with `query_run_id`
+- read-only semantic query execution with a configurable statement timeout
 - Airflow orchestration with retries, contract gating, backfill parameters, and a final health gate
 - Dockerized local infrastructure
 - GitHub Actions CI with linting, integration tests, idempotency proof, deliberate contract-failure simulation, and controlled recovery scenarios
@@ -77,12 +84,6 @@ CI proves this behavior in two deterministic scenarios:
 
 - a newer `B001` update arrives after the baseline load; the affected booking date is reprocessed, raw keeps both versions, and trusted output resolves to the newest status with one trusted booking row;
 - a corrected historical `B003` version is appended and bounded-reprocessed; trusted output receives the corrected field while preserving one-row-per-booking grain.
-
-### Partial downstream failure recovery
-
-CI also forces a singular dbt test to fail after raw ingestion has already succeeded. The failure is expected and visible; CI then runs a clean `dbt build` from the unchanged committed raw state and verifies the trusted dataset recovers correctly.
-
-This demonstrates that successful upstream ingestion does not need to be destructively repeated simply because a downstream transformation/test stage failed.
 
 ### Retry behavior
 
@@ -211,6 +212,19 @@ Exception counts by date, source, rule, quality dimension, and exception status.
 
 The repository does **not** include a `.pbix` file, Power BI Service deployment, or configured Power BI refresh. It implements the downstream data layer that a Power BI model can consume.
 
+## Governed semantic analytics
+
+The repository includes a governed semantic layer over trusted reporting marts. It currently exposes two domains:
+
+- `hotel_operations` -> `analytics_dev_ops.mart_power_bi_hotel_daily`
+- `data_quality` -> `analytics_dev_dq.mart_power_bi_dq_rule_daily`
+
+Natural-language questions are routed to a domain catalog, converted by either the deterministic rules parser or the optional LLM parser into the same semantic-query contract, validated, and then translated into SQL by deterministic application code. The LLM does not generate unrestricted SQL.
+
+The semantic query path also uses domain-specific PostgreSQL reader roles, parameterized filter values, catalog-enforced row limits, read-only transactions, a configurable statement timeout, and audit metadata in `ops.semantic_query_runs`.
+
+The local FastAPI service exposes both an HTTP endpoint and a lightweight browser interface. See `docs/SEMANTIC_LAYER.md` for architecture and usage details.
+
 ## Source-to-target mapping
 
 `docs/source_to_target_mapping.csv` documents implemented field-level lineage across:
@@ -227,17 +241,9 @@ This provides explicit traceability from operational inputs to trusted analytica
 
 ## UAT and acceptance criteria
 
-`docs/uat_test_cases.md` records Given / When / Then acceptance scenarios with expected results, actual results, status, and automated evidence.
+`docs/uat_test_cases.md` records Given / When / Then acceptance scenarios for business-facing outputs. Several acceptance conditions are supported by dbt tests and deterministic pipeline evidence.
 
-Automated dbt UAT tests verify scenarios including:
-
-- unmapped hotel booking quarantine
-- missing guest quarantine
-- invalid stay-date quarantine
-- valid bookings reaching trusted output
-- expected mapping-coverage KPI results
-
-The UAT statuses are marked PASS only after the linked tests pass in GitHub Actions CI.
+The current GitHub Actions workflow does not implement a separate formal UAT stage; technical validation remains part of the dbt and CI test suite.
 
 ## Continuous integration
 
@@ -256,7 +262,9 @@ GitHub Actions validates pull requests and pushes to `master` by:
 - running `dbt build`, including seeds and all dbt tests
 - appending a late-arriving booking update, bounded-reprocessing it, and verifying latest-version trusted behavior
 - appending a historical correction, bounded-reprocessing it, and verifying corrected trusted state without duplicate business rows
-- deliberately forcing a downstream dbt test failure and proving a clean rebuild recovers from unchanged raw state
+- asserting semantic domain marts are created in separate schemas
+- configuring semantic reader roles and proving cross-domain access is blocked
+- executing a governed semantic query and proving audit metadata is recorded
 - executing operational-health checks against deterministic thresholds
 
 This provides executable evidence for safe change management and recovery behavior before changes are merged.
@@ -290,6 +298,7 @@ Key documentation:
 - `docs/source_to_target_mapping.csv`
 - `docs/uat_test_cases.md`
 - `docs/power_bi_reporting_contract.md`
+- `docs/SEMANTIC_LAYER.md`
 - `docs/portfolio_evidence.md`
 - `docs/adr/001-postgres-dbt-airflow.md`
 - `docs/adr/002-idempotent-raw-ingestion.md`
@@ -297,7 +306,7 @@ Key documentation:
 
 ## Tech stack
 
-Python · SQL · PostgreSQL · dbt · Apache Airflow · Docker · Docker Compose · Git · GitHub · GitHub Actions
+Python · SQL · PostgreSQL · dbt · Apache Airflow · Docker · Docker Compose · FastAPI · Git · GitHub · GitHub Actions
 
 ## Scope boundaries
 
@@ -311,7 +320,6 @@ Implemented:
 - controlled backfill
 - late-arriving version handling
 - historical correction/reprocessing evidence
-- partial downstream failure/recovery evidence
 - ingestion-run observability
 - executable source data contracts
 - dbt transformation and validation
@@ -319,8 +327,13 @@ Implemented:
 - structured exception outputs
 - DQ KPI marts
 - operational health checks
-- formal UAT tests
+- documented UAT acceptance scenarios
 - Power BI-ready marts
+- governed multi-domain semantic layer
+- domain-specific PostgreSQL schemas and reader roles
+- deterministic semantic SQL generation with optional LLM parsing
+- FastAPI and browser interfaces
+- semantic query audit logging and execution safeguards
 - Airflow orchestration
 - GitHub Actions CI
 - runbook, incident examples, reliability scenario evidence, testing strategy, and ADRs
