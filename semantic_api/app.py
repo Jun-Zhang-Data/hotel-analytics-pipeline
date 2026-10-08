@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from semantic_api.catalog import (
@@ -15,6 +16,7 @@ from semantic_api.llm_parser import LLMParserError
 from semantic_api.natural_language_service import run_natural_language_query
 from semantic_api.nl_parser import NaturalLanguageQueryError
 from semantic_api.validator import SemanticQueryError
+from semantic_api.web_ui import render_home_page
 
 
 app = FastAPI(
@@ -31,6 +33,11 @@ class QueryRequest(BaseModel):
     domain: str = "auto"
     parser: Literal["rules", "llm"] = "llm"
     include_details: bool = False
+
+
+@app.get("/", response_class=HTMLResponse)
+def home() -> HTMLResponse:
+    return HTMLResponse(render_home_page())
 
 
 @app.get("/health")
