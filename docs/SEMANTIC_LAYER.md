@@ -232,3 +232,49 @@ The semantic query service executes each query with `SET LOCAL ROLE` using the r
 CI verifies both positive and negative access: each role can read its own domain mart and is blocked from the other domain mart.
 
 The local `analytics` login is granted membership in both reader roles so the semantic service can switch roles. In a real deployment, role creation and membership would normally be managed by the platform or database administration layer rather than application startup.
+
+
+## Stakeholder HTTP API
+
+The same governed query flow is now exposed through a small FastAPI service. The API does not accept SQL. It accepts a stakeholder question plus an optional domain and parser mode, then uses the same domain router, semantic catalog, validator, SQL generator and database role used by the CLI.
+
+Install the lightweight semantic dependencies:
+
+```powershell
+pip install -r requirements-semantic.txt
+```
+
+Start the local API from the repository root:
+
+```powershell
+python -m uvicorn semantic_api.app:app --host 127.0.0.1 --port 8000
+```
+
+Health check:
+
+```powershell
+Invoke-RestMethod -Method Get -Uri "http://127.0.0.1:8000/health"
+```
+
+List governed domains:
+
+```powershell
+Invoke-RestMethod -Method Get -Uri "http://127.0.0.1:8000/domains"
+```
+
+Ask a stakeholder question:
+
+```powershell
+$body = @{
+  question = "Which hotel generated the most revenue in September 2026?"
+  domain = "auto"
+  parser = "llm"
+  include_details = $false
+} | ConvertTo-Json
+
+Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8000/query" -ContentType "application/json" -Body $body
+```
+
+By default the API returns only the selected domain and stakeholder-friendly answer. Internal SQL, rows, semantic JSON and database role are returned only when `include_details=true`.
+
+This API is a local MVP and does not add end-user authentication, TLS termination or internet-facing deployment configuration.
