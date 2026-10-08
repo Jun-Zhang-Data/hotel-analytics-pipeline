@@ -4,8 +4,8 @@ description: Governed metrics and dimensions for data-quality stakeholders.
 
 source:
   relation: mart_power_bi_dq_rule_daily
-  schema_env: TARGET_SCHEMA
-  default_schema: analytics_dev
+  schema_env: DATA_QUALITY_SCHEMA
+  default_schema: analytics_dev_dq
 
 time_dimension: check_date
 
