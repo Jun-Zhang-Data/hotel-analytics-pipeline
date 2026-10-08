@@ -1,0 +1,10 @@
+{
+  "metric": "total_revenue",
+  "dimensions": ["hotel"],
+  "date_range": {
+    "start": "2026-09-01",
+    "end": "2026-09-30"
+  },
+  "order": "desc",
+  "limit": 5
+}

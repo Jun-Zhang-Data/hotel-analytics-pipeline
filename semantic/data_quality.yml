@@ -1,0 +1,100 @@
+version: 1
+domain: data_quality
+description: Governed metrics and dimensions for data-quality stakeholders.
+access_role: data_quality_reader
+
+source:
+  relation: mart_power_bi_dq_rule_daily
+  schema_env: DATA_QUALITY_SCHEMA
+  default_schema: analytics_dev_dq
+
+time_dimension: check_date
+
+query_policy:
+  default_limit: 20
+  max_limit: 100
+
+dimensions:
+  check_date:
+    column: check_date
+    type: date
+    description: Date on which the data-quality result applies.
+  source_system:
+    column: source_system_code
+    type: string
+    description: Operational source system that supplied the booking data.
+  rule:
+    column: rule_id
+    type: string
+    description: Stable data-quality rule identifier.
+  rule_name:
+    column: rule_name
+    type: string
+    description: Human-readable data-quality rule name.
+  quality_dimension:
+    column: quality_dimension
+    type: string
+    description: Data-quality category such as mapping coverage, completeness or validity.
+
+metrics:
+  records_checked:
+    expression: sum(records_checked)
+    description: Total records evaluated by data-quality rules.
+    format: number
+  records_passed:
+    expression: sum(records_passed)
+    description: Total records that passed data-quality rules.
+    format: number
+  records_failed:
+    expression: sum(records_failed)
+    description: Total records that failed data-quality rules.
+    format: number
+  pass_rate:
+    expression: sum(records_passed)::numeric / nullif(sum(records_checked), 0)
+    description: Weighted share of checked records that passed data-quality rules.
+    format: percent
+  mapping_coverage_rate:
+    expression: >
+      sum(case when quality_dimension = 'MAPPING_COVERAGE' then records_passed else 0 end)::numeric
+      / nullif(sum(case when quality_dimension = 'MAPPING_COVERAGE' then records_checked else 0 end), 0)
+    description: Share of mapping-coverage records that resolved to a canonical hotel.
+    format: percent
+
+natural_language:
+  metric_aliases:
+    mapping_coverage_rate:
+      - mapping coverage rate
+      - mapping coverage
+    pass_rate:
+      - data quality pass rate
+      - dq pass rate
+      - pass rate
+      - quality pass rate
+    records_failed:
+      - failed records
+      - records failed
+      - failures
+      - dq failures
+    records_passed:
+      - passed records
+      - records passed
+    records_checked:
+      - checked records
+      - records checked
+  dimension_aliases:
+    source_system:
+      - source system
+      - source systems
+      - source
+    rule:
+      - rule
+      - rules
+      - rule id
+    rule_name:
+      - rule name
+    quality_dimension:
+      - quality dimension
+      - quality category
+    check_date:
+      - check date
+      - date

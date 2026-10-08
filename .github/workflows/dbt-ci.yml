@@ -45,13 +45,16 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pandas==2.2.3 psycopg2-binary==2.9.10 dbt-postgres==1.9.0 ruff==0.13.2
+          pip install pandas==2.2.3 psycopg2-binary==2.9.10 dbt-postgres==1.9.0 PyYAML==6.0.2 openai==3.26.1 python-dotenv==1.0.1 fastapi==0.142.4 uvicorn==0.54.0 ruff==0.13.2
 
       - name: Lint Python
-        run: ruff check scripts airflow/dags
+        run: ruff check scripts semantic_api tests airflow/dags
 
       - name: Compile Python
-        run: python -m compileall -q scripts airflow/dags
+        run: python -m compileall -q scripts semantic_api tests airflow/dags
+
+      - name: Test semantic layer
+        run: python -m unittest discover -s tests -p "test_*.py"
 
       - name: Install PostgreSQL client
         run: |
@@ -118,6 +121,39 @@ jobs:
       - name: Build and test dbt project
         working-directory: dbt_hotel
         run: dbt build --profiles-dir . --target dev
+
+      - name: Assert semantic domain schemas are built
+        env:
+          PGPASSWORD: analytics
+        run: |
+          test "$(psql -h localhost -U analytics -d hotel -Atc "select to_regclass('analytics_dev_ops.mart_power_bi_hotel_daily') is not null;")" = "t"
+          test "$(psql -h localhost -U analytics -d hotel -Atc "select to_regclass('analytics_dev_dq.mart_power_bi_dq_rule_daily') is not null;")" = "t"
+
+      - name: Configure semantic least-privilege roles
+        run: python scripts/configure_semantic_access.py
+
+      - name: Prove semantic roles cannot cross domains
+        shell: bash
+        env:
+          PGPASSWORD: analytics
+        run: |
+          psql -v ON_ERROR_STOP=1 -h localhost -U analytics -d hotel -c "set role hotel_ops_reader; select count(*) from analytics_dev_ops.mart_power_bi_hotel_daily;"
+          psql -v ON_ERROR_STOP=1 -h localhost -U analytics -d hotel -c "set role data_quality_reader; select count(*) from analytics_dev_dq.mart_power_bi_dq_rule_daily;"
+
+          if psql -v ON_ERROR_STOP=1 -h localhost -U analytics -d hotel -c "set role hotel_ops_reader; select count(*) from analytics_dev_dq.mart_power_bi_dq_rule_daily;"; then
+            echo "hotel_ops_reader unexpectedly accessed the data-quality domain."
+            exit 1
+          fi
+
+          if psql -v ON_ERROR_STOP=1 -h localhost -U analytics -d hotel -c "set role data_quality_reader; select count(*) from analytics_dev_ops.mart_power_bi_hotel_daily;"; then
+            echo "data_quality_reader unexpectedly accessed the hotel-operations domain."
+            exit 1
+          fi
+
+      - name: Prove semantic query audit logging
+        run: |
+          python -m scripts.query_natural_language --domain hotel_operations --parser rules --question "Which hotel generated the most revenue in September 2026?"
+          test "$(PGPASSWORD=analytics psql -h localhost -U analytics -d hotel -Atc "select count(*) from ops.semantic_query_runs where selected_domain='hotel_operations' and status='SUCCESS';")" -ge "1"
 
       - name: Assert incremental watermarks initialized
         env:

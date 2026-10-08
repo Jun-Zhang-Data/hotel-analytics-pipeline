@@ -1,0 +1,88 @@
+version: 1
+domain: hotel_operations
+description: Governed business metrics and dimensions for hotel operations analytics.
+access_role: hotel_ops_reader
+
+source:
+  relation: mart_power_bi_hotel_daily
+  schema_env: HOTEL_OPS_SCHEMA
+  default_schema: analytics_dev_ops
+
+time_dimension: booking_date
+
+query_policy:
+  default_limit: 20
+  max_limit: 100
+
+dimensions:
+  booking_date:
+    column: booking_date
+    type: date
+    description: Business date of the hotel booking activity.
+  hotel:
+    column: hotel_name
+    type: string
+    description: Canonical hotel name.
+  city:
+    column: city
+    type: string
+    description: City of the canonical hotel.
+
+metrics:
+  total_bookings:
+    expression: sum(total_bookings)
+    description: Total number of bookings.
+    format: number
+  cancelled_bookings:
+    expression: sum(cancelled_bookings)
+    description: Total number of cancelled bookings.
+    format: number
+  active_bookings:
+    expression: sum(active_bookings)
+    description: Total number of non-cancelled bookings.
+    format: number
+  total_revenue:
+    expression: sum(total_revenue)
+    description: Total booking revenue.
+    format: number
+  cancellation_rate:
+    expression: sum(cancelled_bookings)::numeric / nullif(sum(total_bookings), 0)
+    description: Cancelled bookings divided by total bookings.
+    format: percent
+  revenue_per_booking:
+    expression: sum(total_revenue)::numeric / nullif(sum(total_bookings), 0)
+    description: Total revenue divided by total bookings.
+    format: number
+
+natural_language:
+  metric_aliases:
+    cancellation_rate:
+      - cancellation rate
+      - cancel rate
+    revenue_per_booking:
+      - revenue per booking
+      - average revenue per booking
+    cancelled_bookings:
+      - cancelled bookings
+      - canceled bookings
+      - cancellations
+    active_bookings:
+      - active bookings
+      - non-cancelled bookings
+      - non-canceled bookings
+    total_bookings:
+      - total bookings
+      - bookings
+    total_revenue:
+      - total revenue
+      - revenue
+  dimension_aliases:
+    hotel:
+      - hotel
+      - hotels
+    city:
+      - city
+      - cities
+    booking_date:
+      - booking date
+      - date
