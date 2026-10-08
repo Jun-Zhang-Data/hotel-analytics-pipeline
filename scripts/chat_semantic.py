@@ -1,10 +1,9 @@
 import argparse
 import json
 
-from semantic_api.catalog import load_catalog_for_domain, load_domain_registry
-from semantic_api.domain_router import DomainRoutingError, route_domain_with_llm
-from semantic_api.llm_parser import LLMParserError, parse_question_with_llm
-from semantic_api.query_service import run_semantic_query
+from semantic_api.domain_router import DomainRoutingError
+from semantic_api.llm_parser import LLMParserError
+from semantic_api.natural_language_service import run_natural_language_query
 
 
 def parse_args():
@@ -21,7 +20,6 @@ def parse_args():
 
 def main():
     args = parse_args()
-    registry = load_domain_registry()
 
     print("Hotel Analytics Chat")
     print("Available domains: hotel_operations, data_quality")
@@ -40,15 +38,17 @@ def main():
             continue
 
         try:
-            domain = route_domain_with_llm(question, registry)
-            catalog = load_catalog_for_domain(domain, registry)
-            semantic_query = parse_question_with_llm(question, catalog)
-            result = run_semantic_query(semantic_query, catalog=catalog)
+            result = run_natural_language_query(
+                question,
+                domain="auto",
+                parser="llm",
+                execute=True,
+            )
             print(result["answer"])
 
             if args.show_details:
                 print(json.dumps(result, indent=2, default=str))
-        except (DomainRoutingError, LLMParserError) as exc:
+        except (DomainRoutingError, LLMParserError, ValueError) as exc:
             print(f"Clarification needed: {exc}")
         except Exception as exc:
             print(f"Query failed: {exc}")
