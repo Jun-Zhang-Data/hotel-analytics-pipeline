@@ -54,7 +54,7 @@ class DomainRoutingTests(unittest.TestCase):
         self.assertEqual(query["dimensions"], ["source_system"])
         self.assertEqual(query["order"], "asc")
         self.assertEqual(query["limit"], 1)
-        self.assertIn("mart_power_bi_dq_rule_daily", sql)
+        self.assertIn("from analytics_dev_dq.mart_power_bi_dq_rule_daily", sql)
         self.assertIn("group by source_system_code", sql)
         self.assertEqual(params, ["2026-09-01", "2026-09-30", 1])
 
