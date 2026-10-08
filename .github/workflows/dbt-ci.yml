@@ -150,6 +150,11 @@ jobs:
             exit 1
           fi
 
+      - name: Prove semantic query audit logging
+        run: |
+          python -m scripts.query_natural_language --domain hotel_operations --parser rules --question "Which hotel generated the most revenue in September 2026?"
+          test "$(PGPASSWORD=analytics psql -h localhost -U analytics -d hotel -Atc "select count(*) from ops.semantic_query_runs where selected_domain='hotel_operations' and status='SUCCESS';")" -ge "1"
+
       - name: Assert incremental watermarks initialized
         env:
           PGPASSWORD: analytics
