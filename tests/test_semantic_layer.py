@@ -16,7 +16,7 @@ class SemanticLayerTests(unittest.TestCase):
         try:
             self.assertEqual(
                 resolve_source_relation(self.catalog),
-                "analytics_dev.mart_power_bi_hotel_daily",
+                "analytics_dev_ops.mart_power_bi_hotel_daily",
             )
         finally:
             if old_value is not None:
@@ -51,7 +51,7 @@ class SemanticLayerTests(unittest.TestCase):
         }
         sql, params = generate_sql(query, self.catalog)
 
-        self.assertIn("from analytics_dev.mart_power_bi_hotel_daily", sql)
+        self.assertIn("from analytics_dev_ops.mart_power_bi_hotel_daily", sql)
         self.assertIn("sum(total_revenue) as total_revenue", sql)
         self.assertIn("group by city", sql)
         self.assertIn("city = %s", sql)
