@@ -17,6 +17,11 @@ def parse_args():
         action="store_true",
         help="Print the semantic query and generated SQL without querying PostgreSQL",
     )
+    parser.add_argument(
+        "--show-details",
+        action="store_true",
+        help="Also print the semantic query, SQL, and returned rows",
+    )
     return parser.parse_args()
 
 
@@ -35,7 +40,11 @@ def main():
         return
 
     result = run_semantic_query(semantic_query)
-    print(json.dumps(result, indent=2, default=str))
+    print(result["answer"])
+
+    if args.show_details:
+        print("details=")
+        print(json.dumps(result, indent=2, default=str))
 
 
 if __name__ == "__main__":
