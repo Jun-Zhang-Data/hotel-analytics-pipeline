@@ -8,4 +8,5 @@ RUN pip install --no-cache-dir \
     SQLAlchemy==1.4.54 \
     psycopg2-binary==2.9.10 \
     PyYAML==6.0.2 \
-    openai==3.26.1
+    openai==3.26.1 \
+    python-dotenv==1.0.1
