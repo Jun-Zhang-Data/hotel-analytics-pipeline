@@ -126,7 +126,7 @@ $env:OPENAI_SEMANTIC_MODEL="your-api-model"
 Install dependencies:
 
 ```powershell
-pip install -r requirements.txt
+pip install -r requirements-semantic.txt
 ```
 
 Run an LLM-backed dry run:
@@ -205,3 +205,30 @@ analytics_dev_dq.mart_power_bi_dq_rule_daily
 ```
 
 The shared core models still live in the base analytics schema and remain reusable. Only the reporting marts intended for a stakeholder domain are exposed through that domain's semantic catalog. This gives the project both logical governance through the catalog and physical separation through PostgreSQL schemas.
+
+
+## Database access control
+
+Each semantic domain now has a PostgreSQL read role in addition to its catalog and schema boundary:
+
+```text
+hotel_operations
+-> hotel_ops_reader
+-> analytics_dev_ops
+
+data_quality
+-> data_quality_reader
+-> analytics_dev_dq
+```
+
+After dbt builds the domain marts, configure the local roles:
+
+```powershell
+python scripts/configure_semantic_access.py
+```
+
+The semantic query service executes each query with `SET LOCAL ROLE` using the role declared in that domain's catalog. This means a hotel-operations query runs as `hotel_ops_reader`, while a data-quality query runs as `data_quality_reader`.
+
+CI verifies both positive and negative access: each role can read its own domain mart and is blocked from the other domain mart.
+
+The local `analytics` login is granted membership in both reader roles so the semantic service can switch roles. In a real deployment, role creation and membership would normally be managed by the platform or database administration layer rather than application startup.
