@@ -1,0 +1,48 @@
+version: 1
+domain: hotel_operations
+description: Governed business metrics and dimensions for hotel operations analytics.
+
+source:
+  relation: mart_power_bi_hotel_daily
+  schema_env: TARGET_SCHEMA
+  default_schema: analytics_dev
+
+time_dimension: booking_date
+
+query_policy:
+  default_limit: 20
+  max_limit: 100
+
+dimensions:
+  booking_date:
+    column: booking_date
+    type: date
+    description: Business date of the hotel booking activity.
+  hotel:
+    column: hotel_name
+    type: string
+    description: Canonical hotel name.
+  city:
+    column: city
+    type: string
+    description: City of the canonical hotel.
+
+metrics:
+  total_bookings:
+    expression: sum(total_bookings)
+    description: Total number of bookings.
+  cancelled_bookings:
+    expression: sum(cancelled_bookings)
+    description: Total number of cancelled bookings.
+  active_bookings:
+    expression: sum(active_bookings)
+    description: Total number of non-cancelled bookings.
+  total_revenue:
+    expression: sum(total_revenue)
+    description: Total booking revenue.
+  cancellation_rate:
+    expression: sum(cancelled_bookings)::numeric / nullif(sum(total_bookings), 0)
+    description: Cancelled bookings divided by total bookings.
+  revenue_per_booking:
+    expression: sum(total_revenue)::numeric / nullif(sum(total_bookings), 0)
+    description: Total revenue divided by total bookings.
