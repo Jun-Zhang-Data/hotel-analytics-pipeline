@@ -1,6 +1,7 @@
 version: 1
 domain: hotel_operations
 description: Governed business metrics and dimensions for hotel operations analytics.
+access_role: hotel_ops_reader
 
 source:
   relation: mart_power_bi_hotel_daily
