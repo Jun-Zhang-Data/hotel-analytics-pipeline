@@ -104,3 +104,45 @@ into the governed JSON contract:
 ```
 
 The LLM should only produce the semantic query. Validation and SQL generation remain deterministic application responsibilities.
+
+
+## Optional LLM parser
+
+The deterministic rule parser remains available for reproducible local tests. An optional LLM parser can translate more varied stakeholder wording into the same governed semantic-query contract.
+
+The LLM is not allowed to write or execute SQL. Its output is parsed as JSON and then passed through the same deterministic semantic validator before SQL generation.
+
+Set the API key and model only in your local environment. Do not commit credentials.
+
+PowerShell:
+
+```powershell
+$env:OPENAI_API_KEY="your-key"
+$env:OPENAI_SEMANTIC_MODEL="your-api-model"
+```
+
+Install dependencies:
+
+```powershell
+pip install -r requirements.txt
+```
+
+Run an LLM-backed dry run:
+
+```powershell
+python -m scripts.query_natural_language --parser llm --question "Which hotel generated the most revenue in September 2026?" --dry-run
+```
+
+Run the governed query against PostgreSQL:
+
+```powershell
+python -m scripts.query_natural_language --parser llm --question "Which hotel generated the most revenue in September 2026?"
+```
+
+Start the interactive terminal chat:
+
+```powershell
+python -m scripts.chat_semantic
+```
+
+Questions that cannot be mapped safely should request clarification instead of producing unrestricted SQL.
